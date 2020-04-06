@@ -23,17 +23,100 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject, QgsSettings, QgsVectorLayer
+from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem
+from qgis.core import QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer
+# from qgis.utils import iface
 from zipfile import ZipFile
 from tempfile import NamedTemporaryFile
 import requests
+import copy
+import json
+import math
 
 # Initialize Qt resources from file resources.py
 from .resources import *
 # Import the code for the dialog
 from .harmony_qgis_dialog import HarmonyQGISDialog
 import os.path
+
+RADIUS = 6378137
+
+def rewind(geojson, rfc7946=True):
+    gj = copy.deepcopy(geojson)
+    if isinstance(gj, str):
+        return json.dumps(_rewind(json.loads(gj), rfc7946))
+    else:
+        return _rewind(gj, rfc7946)
+
+def _rewind(gj, rfc7946):
+    if gj['type'] == 'FeatureCollection':
+        gj['features'] = list(
+            map(lambda obj: _rewind(obj, rfc7946), gj['features'])
+        )
+        return gj
+    if gj['type'] == 'Feature':
+        gj['geometry'] = _rewind(gj['geometry'], rfc7946)
+    if gj['type'] in ['Polygon', 'MultiPolygon']:
+        return correct(gj, rfc7946)
+    return gj
+
+def correct(feature, rfc7946):
+    if feature['type'] == 'Polygon':
+        feature['coordinates'] = correctRings(feature['coordinates'], rfc7946)
+    if feature['type'] == 'MultiPolygon':
+        feature['coordinates'] = list(
+            map(lambda obj: correctRings(obj, rfc7946), feature['coordinates'])
+        )
+    return feature
+
+def correctRings(rings, rfc7946):
+    # change from rfc7946: True/False to clockwise: True/False here
+    # RFC 7946 ordering determines how we deal with an entire polygon
+    # but at this point we are switching to deal with individual rings
+    # (which in isolation are just clockwise or anti-clockwise)
+    clockwise = not(bool(rfc7946))
+    rings[0] = wind(rings[0], clockwise)
+    for i in range(1, len(rings)):
+        rings[i] = wind(rings[i], not(clockwise))
+    return rings
+
+def wind(ring, clockwise):
+    if is_clockwise(ring) == clockwise:
+        return ring
+    return ring[::-1]
+
+def is_clockwise(ring):
+    return ringArea(ring) >= 0
+
+def ringArea(coords):
+    area = 0
+    coordsLength = len(coords)
+
+    if coordsLength > 2:
+        for i in range(0, coordsLength):
+            if i == coordsLength - 2:
+                lowerIndex = coordsLength - 2
+                middleIndex = coordsLength - 1
+                upperIndex = 0
+            elif i == coordsLength - 1:
+                lowerIndex = coordsLength - 1
+                middleIndex = 0
+                upperIndex = 1
+            else:
+                lowerIndex = i
+                middleIndex = i + 1
+                upperIndex = i + 2
+            p1 = coords[lowerIndex]
+            p2 = coords[middleIndex]
+            p3 = coords[upperIndex]
+            area = area + ( rad(p3[0]) - rad(p1[0]) ) * math.sin(rad(p2[1]))
+
+        area = area * RADIUS * RADIUS / 2
+
+    return area
+
+def rad(coord):
+    return coord * math.pi / 180
 
 
 class HarmonyQGIS:
@@ -216,9 +299,12 @@ class HarmonyQGIS:
         self.dlg.comboBox.addItems(layerNames)
 
         # use the previous layer as the default if it is in the existing layers
-        layerName = settings.value("harmony_qgis/layer")
-        if layerName and layerName in layerNames:
-            self.dlg.comboBox.setCurrentIndex(layerNames.index(layerName))
+        # layerName = settings.value("harmony_qgis/layer")
+        # if layerName and layerName in layerNames:
+        #     self.dlg.comboBox.setCurrentIndex(layerNames.index(layerName))
+        layer = self.iface.activeLayer()
+        if layer:
+            self.dlg.comboBox.setCurrentIndex(layerNames.index(layer.name()))
 
         # fill the harmnoy url input with the saved setting if available
         harmonyUrl = settings.value("harmony_qgis/harmony_url")
@@ -236,6 +322,15 @@ class HarmonyQGIS:
         if variable:
             self.dlg.variableField.setText(variable)
 
+        # clear the table
+        self.dlg.tableWidget.setRowCount(0)
+
+        # set the table header
+        self.dlg.tableWidget.setHorizontalHeaderLabels('Parameter;Value'.split(';'))
+
+        # add a parameter/value when the 'Add' button is clicked
+        self.dlg.addButton.clicked.connect(self.addSearchParameter)
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -250,25 +345,27 @@ class HarmonyQGIS:
             layerName = str(self.dlg.comboBox.currentText())
             # TODO handle the case where there is more than one layer by this name
             layer = QgsProject.instance().mapLayersByName(layerName)[0]
-            directory = os.path.split(layer.source())[0]
-
-            # tempFile = NamedTemporaryFile()
-            # print(tempFile.name)
-            tempFile = '/tmp/harmony-qgis.zip'
-            with ZipFile(tempFile, 'w') as zipObj:
-                for ext in ['shp', 'cpg', 'dbf', 'prj', 'shx', 'qpj']:
-                    filePath = directory + "/" + layerName + '.' + ext
-                    if os.path.exists(filePath):
-                        zipObj.write(filePath, layerName + '.' + ext)
+            opts = QgsVectorFileWriter.SaveVectorOptions()
+            opts.driverName = 'GeoJson'
+            tempFile = '/tmp/qgis.json'
+            QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
 
             harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
             path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
             url = harmonyUrl + "/" + path
             print(url)
 
+            tempFileHandle = open(tempFile, 'r')
+            contents = tempFileHandle.read()
+            tempFileHandle.close()
+            geoJson = rewind(contents)
+            tempFileHandle = open(tempFile, 'w')
+            tempFileHandle.write(geoJson)
+            tempFileHandle.close()
             tempFileHandle = open(tempFile, 'rb')
+
             multipart_form_data = {
-                'shapefile': (layerName + '.zip', tempFileHandle, 'application/shapefile+zip')
+                'shapefile': (layerName + '.geojson', tempFileHandle, 'application/geo+json')
             }
 
             rowCount = self.dlg.tableWidget.rowCount()
@@ -277,13 +374,18 @@ class HarmonyQGIS:
                 value = self.dlg.tableWidget.item(row, 1).text()
                 multipart_form_data[parameter] = (None, value)
 
-            resp = requests.post(url, files=multipart_form_data)
-            print(resp)
-            print(resp.text)
-            print(resp.json())
-
+            resp = requests.post(url, files=multipart_form_data, stream=True)
             tempFileHandle.close()
+            # print(resp)
+            # print(resp.text)
+            with open('/tmp/harmony_output_image.tif', 'wb') as fd:
+                for chunk in resp.iter_content(chunk_size=128):
+                    fd.write(chunk)
+
             os.remove(tempFile)
+
+            self.iface.addRasterLayer('/tmp/harmony_output_image.tif', layerName + '-' + variable)
+            # QgsRasterLayer('/tmp/harmony_output_image.tif', layerName)
 
             # save settings
             if collectionId != "":
