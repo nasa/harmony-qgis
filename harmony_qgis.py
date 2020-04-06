@@ -24,6 +24,10 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
+from qgis.core import QgsProject, QgsSettings, QgsVectorLayer
+from zipfile import ZipFile
+from tempfile import NamedTemporaryFile
+import requests
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -179,6 +183,16 @@ class HarmonyQGIS:
                 action)
             self.iface.removeToolBarIcon(action)
 
+    def addSearchParameter(self):
+        """Add a search parameter to the parameter table"""
+        line = self.dlg.lineEdit.text()
+        if line.find('=') > 0:
+            parameter, value = line.split('=')
+            rowPosition = self.dlg.tableWidget.rowCount()
+            self.dlg.tableWidget.insertRow(rowPosition)
+            self.dlg.tableWidget.setItem(rowPosition, 0, QTableWidgetItem(parameter))
+            self.dlg.tableWidget.setItem(rowPosition, 1, QTableWidgetItem(value))
+            self.dlg.lineEdit.clear()
 
     def run(self):
         """Run method that performs all the real work"""
@@ -189,12 +203,95 @@ class HarmonyQGIS:
             self.first_start = False
             self.dlg = HarmonyQGISDialog()
 
+        # get stored settings
+        settings = QgsSettings()
+
+        # Fetch the currently loaded layers
+        layers = QgsProject.instance().layerTreeRoot().children()
+        layerNames = [layer.name() for layer in layers]
+
+        # Clear the contents of the comboBox from previous runs
+        self.dlg.comboBox.clear()
+        # Populate the comboBox with names of all the loaded layers
+        self.dlg.comboBox.addItems(layerNames)
+
+        # use the previous layer as the default if it is in the existing layers
+        layerName = settings.value("harmony_qgis/layer")
+        if layerName and layerName in layerNames:
+            self.dlg.comboBox.setCurrentIndex(layerNames.index(layerName))
+
+        # fill the harmnoy url input with the saved setting if available
+        harmonyUrl = settings.value("harmony_qgis/harmony_url")
+        if harmonyUrl:
+            self.dlg.harmonyUrlLineEdit.setText(harmonyUrl)
+
+        collectionId = settings.value("harmony_qgis/collection_id")
+        if collectionId:
+            self.dlg.collectionField.setText(collectionId)
+
+        version = settings.value("harmony_qgis/version") or "1.0.0"
+        self.dlg.versionField.setText(version)
+
+        variable = settings.value("harmony_qgis/variable")
+        if variable:
+            self.dlg.variableField.setText(variable)
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+
+            collectionId = str(self.dlg.collectionField.text())
+            version = str(self.dlg.versionField.text())
+            variable = str(self.dlg.variableField.text())
+
+            layerName = str(self.dlg.comboBox.currentText())
+            # TODO handle the case where there is more than one layer by this name
+            layer = QgsProject.instance().mapLayersByName(layerName)[0]
+            directory = os.path.split(layer.source())[0]
+
+            # tempFile = NamedTemporaryFile()
+            # print(tempFile.name)
+            tempFile = '/tmp/harmony-qgis.zip'
+            with ZipFile(tempFile, 'w') as zipObj:
+                for ext in ['shp', 'cpg', 'dbf', 'prj', 'shx', 'qpj']:
+                    filePath = directory + "/" + layerName + '.' + ext
+                    if os.path.exists(filePath):
+                        zipObj.write(filePath, layerName + '.' + ext)
+
+            harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
+            path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
+            url = harmonyUrl + "/" + path
+            print(url)
+
+            tempFileHandle = open(tempFile, 'rb')
+            multipart_form_data = {
+                'shapefile': (layerName + '.zip', tempFileHandle, 'application/shapefile+zip')
+            }
+
+            rowCount = self.dlg.tableWidget.rowCount()
+            for row in range(rowCount):
+                parameter = self.dlg.tableWidget.item(row, 0).text()
+                value = self.dlg.tableWidget.item(row, 1).text()
+                multipart_form_data[parameter] = (None, value)
+
+            resp = requests.post(url, files=multipart_form_data)
+            print(resp)
+            print(resp.text)
+            print(resp.json())
+
+            tempFileHandle.close()
+            os.remove(tempFile)
+
+            # save settings
+            if collectionId != "":
+                settings.setValue("harmony_qgis/collection_id", collectionId)
+            if version != "":
+                settings.setValue("harmony_qgis/version", version)
+            if variable != "":
+                settings.setValue("harmony_qgis/variable", variable)
+            if harmonyUrl != "":
+                settings.setValue("harmony_qgis/harmony_url", harmonyUrl)
+            settings.setValue("harmony_qgis/layer", layerName)
