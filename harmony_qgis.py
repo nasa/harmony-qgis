@@ -38,6 +38,7 @@ from .resources import *
 # Import the code for the dialog
 from .harmony_qgis_dialog import HarmonyQGISDialog
 import os.path
+from .harmony_response import handleHarmonyResponse
 
 RADIUS = 6378137
 
@@ -376,16 +377,9 @@ class HarmonyQGIS:
 
             resp = requests.post(url, files=multipart_form_data, stream=True)
             tempFileHandle.close()
-            # print(resp)
-            # print(resp.text)
-            with open('/tmp/harmony_output_image.tif', 'wb') as fd:
-                for chunk in resp.iter_content(chunk_size=128):
-                    fd.write(chunk)
-
             os.remove(tempFile)
 
-            self.iface.addRasterLayer('/tmp/harmony_output_image.tif', layerName + '-' + variable)
-            # QgsRasterLayer('/tmp/harmony_output_image.tif', layerName)
+            handleHarmonyResponse(self.iface, resp, layerName, variable)
 
             # save settings
             if collectionId != "":
