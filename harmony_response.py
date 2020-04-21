@@ -9,6 +9,8 @@ import tempfile
 import os
 import requests
 
+from qgis.core import QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
+
 # Session accessible by callers
 session = requests.session()
 
@@ -69,14 +71,13 @@ def get_data_urls(response):
   """
   return [link['href'] for link in response.json()['links'] if link.get('rel', 'data') == 'data']
 
-
 def show(iface, response, layerName, variable):
-  tmp = tempfile.NamedTemporaryFile(suffix='.tif', delete=False)
-  try:
-    tmp.write(response.content)
-    iface.addRasterLayer(tmp.name, layerName + '-' + variable)
-  finally:
-    os.unlink(tmp.name)
+  filename = '/tmp/harmony_output_image' + str(variable) + '.tif'
+  with open(filename, 'wb') as fd:
+    for chunk in response.iter_content(chunk_size=128):
+      fd.write(chunk)
+  iface.addRasterLayer(filename, layerName + '-' + str(variable))
+  # os.remove(filename)
 
 def show_async(iface, response):
   """Shows an asynchronous Harmony response.
@@ -92,8 +93,7 @@ def show_async(iface, response):
       response.Response -- the response from the final successful or failed poll
   """
   def show_response(iface, response, link_count):
-    print('Async response at', datetime.now().strftime("%H:%M:%S"))
-    print(json.dumps(response.json(), indent=2))
+    QgsMessageLog.logMessage(json.dumps(response.json(), indent=2), 'Harmony Plugin')
     links = get_data_urls(response)
     new_links = links[slice(link_count, None)]
     for link in new_links:
@@ -107,7 +107,7 @@ def show_async(iface, response):
   waiting_message_printed = False
   while body['status'] not in ['successful', 'failed']:
     if not waiting_message_printed:
-      print('Waiting for updates...')
+      QgsMessageLog.logMessage('Waiting for updates...', 'Harmony Plugin')
       waiting_message_printed = True
     sleep(1)
     progress = body['progress']
@@ -117,7 +117,7 @@ def show_async(iface, response):
     if progress != body['progress'] or status != body['status']:
       displayed_link_count = show_response(iface, response, displayed_link_count)
       waiting_message_printed = False
-  print('Async request is complete')
+  QgsMessageLog.logMessage('Async request is complete', 'Harmony Plugin')
   return response
 
 def handleAsyncResponse(iface, response):
@@ -132,7 +132,10 @@ def handleSyncResponse(iface, response, layerName, variable):
 
 def handleHarmonyResponse(iface, response, layerName, variable):
   content_type = response.headers['Content-Type']
-  if content_type == 'application/json':
+  message = 'Content-type is: ' + content_type
+  QgsMessageLog.logMessage(message, 'Harmony Plugin')
+
+  if content_type == 'application/json; charset=utf-8':
     handleAsyncResponse(iface, response)
   else:
     handleSyncResponse(iface, response, layerName, variable)
