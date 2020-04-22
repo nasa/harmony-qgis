@@ -71,12 +71,13 @@ def get_data_urls(response):
   """
   return [link['href'] for link in response.json()['links'] if link.get('rel', 'data') == 'data']
 
-def show(iface, response, layerName, variable):
-  filename = '/tmp/harmony_output_image' + str(variable) + '.tif'
+def show(iface, response, layerName):
+  QgsMessageLog.logMessage('Adding layer' + layerName, 'Harmony Plugin')
+  filename = '/tmp/harmony_output_image' + layerName + '.tif'
   with open(filename, 'wb') as fd:
     for chunk in response.iter_content(chunk_size=128):
       fd.write(chunk)
-  iface.addRasterLayer(filename, layerName + '-' + str(variable))
+  iface.addRasterLayer(filename, layerName)
   # os.remove(filename)
 
 def show_async(iface, response):
@@ -98,7 +99,12 @@ def show_async(iface, response):
     new_links = links[slice(link_count, None)]
     for link in new_links:
       if link.startswith('http'):
-        show(iface, get(link), 'layer', link_count)
+        lastSlash = link.rindex('/')
+        layerName = link[lastSlash + 1:]
+        extensionIndex = layerName.rindex('.')
+        if extensionIndex >= 0:
+          layerName = layerName[0:extensionIndex]
+        show(iface, get(link), layerName)
     return len(links)
 
   displayed_link_count = 0
