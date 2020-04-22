@@ -372,40 +372,53 @@ class HarmonyQGIS:
             version = str(self.dlg.versionField.text())
             variable = str(self.dlg.variableField.text())
 
-            layerName = str(self.dlg.comboBox.currentText())
-            # TODO handle the case where there is more than one layer by this name
-            layer = QgsProject.instance().mapLayersByName(layerName)[0]
-            opts = QgsVectorFileWriter.SaveVectorOptions()
-            opts.driverName = 'GeoJson'
-            tempFile = '/tmp/qgis.json'
-            QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
-
             harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
             path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
             url = harmonyUrl + "/" + path
-            QgsMessageLog.logMessage("URL:" + url, "Harmony Plugin")
 
-            tempFileHandle = open(tempFile, 'r')
-            contents = tempFileHandle.read()
-            tempFileHandle.close()
-            geoJson = rewind(contents)
-            tempFileHandle = open(tempFile, 'w')
-            tempFileHandle.write(geoJson)
-            tempFileHandle.close()
-            tempFileHandle = open(tempFile, 'rb')
+            layerName = str(self.dlg.comboBox.currentText())
+            if layerName == "<None>":
+                # use a GET request
+                rowCount = self.dlg.tableWidget.rowCount()
+                for row in range(rowCount):
+                    separator = "&"
+                    if row == 0:
+                        separator = "?"
+                    parameter = self.dlg.tableWidget.item(row, 0).text()
+                    value = self.dlg.tableWidget.item(row, 1).text()
+                    url = url + separator + parameter + "=" + value
+                resp = requests.get(url)
+            else:
+                layer = QgsProject.instance().mapLayersByName(layerName)[0]
+                opts = QgsVectorFileWriter.SaveVectorOptions()
+                opts.driverName = 'GeoJson'
+                tempFile = '/tmp/qgis.json'
+                QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
 
-            multipart_form_data = {
-                'shapefile': (layerName + '.geojson', tempFileHandle, 'application/geo+json')
-            }
+                
+                QgsMessageLog.logMessage("URL:" + url, "Harmony Plugin")
 
-            rowCount = self.dlg.tableWidget.rowCount()
-            for row in range(rowCount):
-                parameter = self.dlg.tableWidget.item(row, 0).text()
-                value = self.dlg.tableWidget.item(row, 1).text()
-                multipart_form_data[parameter] = (None, value)
+                tempFileHandle = open(tempFile, 'r')
+                contents = tempFileHandle.read()
+                tempFileHandle.close()
+                geoJson = rewind(contents)
+                tempFileHandle = open(tempFile, 'w')
+                tempFileHandle.write(geoJson)
+                tempFileHandle.close()
+                tempFileHandle = open(tempFile, 'rb')
 
-            resp = requests.post(url, files=multipart_form_data, stream=True)
-            tempFileHandle.close()
-            os.remove(tempFile)
+                multipart_form_data = {
+                    'shapefile': (layerName + '.geojson', tempFileHandle, 'application/geo+json')
+                }
+
+                rowCount = self.dlg.tableWidget.rowCount()
+                for row in range(rowCount):
+                    parameter = self.dlg.tableWidget.item(row, 0).text()
+                    value = self.dlg.tableWidget.item(row, 1).text()
+                    multipart_form_data[parameter] = (None, value)
+
+                resp = requests.post(url, files=multipart_form_data, stream=True)
+                tempFileHandle.close()
+                os.remove(tempFile)
 
             handleHarmonyResponse(self.iface, resp, layerName, variable)
