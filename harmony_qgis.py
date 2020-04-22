@@ -23,8 +23,8 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem
-from qgis.core import QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer
+from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QInputDialog, QLineEdit
+from qgis.core import QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
 # from qgis.utils import iface
 from zipfile import ZipFile
 from tempfile import NamedTemporaryFile
@@ -37,10 +37,11 @@ import math
 from .resources import *
 # Import the code for the dialog
 from .harmony_qgis_dialog import HarmonyQGISDialog
-from .harmony_qgis_sessions import handleSession, addSession, deleteSession
+from .harmony_qgis_sessions import newSessionTag, switchSession, manageSessions, populateSessionsCombo, saveSession, startDeleteSession
 from .HarmonyEventFilter import HarmonyEventFilter
 import os.path
 from .harmony_response import handleHarmonyResponse
+from .harmony_qgis_sessions_dialog import HarmonyQGISSessionsDialog
 
 RADIUS = 6378137
 
@@ -270,14 +271,22 @@ class HarmonyQGIS:
 
     def addSearchParameter(self):
         """Add a search parameter to the parameter table"""
-        line = self.dlg.lineEdit.text()
-        if line.find('=') > 0:
-            parameter, value = line.split('=')
-            rowPosition = self.dlg.tableWidget.rowCount()
-            self.dlg.tableWidget.insertRow(rowPosition)
-            self.dlg.tableWidget.setItem(rowPosition, 0, QTableWidgetItem(parameter))
-            self.dlg.tableWidget.setItem(rowPosition, 1, QTableWidgetItem(value))
-            self.dlg.lineEdit.clear()
+        rowPosition = self.dlg.tableWidget.rowCount()
+        self.dlg.tableWidget.insertRow(rowPosition)
+        self.dlg.tableWidget.setItem(rowPosition, 0, QTableWidgetItem(""))
+        self.dlg.tableWidget.setItem(rowPosition, 1, QTableWidgetItem(""))
+
+    def deleteSearchParameter(self):
+        """Remove a search parameter from the table"""
+        self.dlg.tableWidget.removeRow(self.dlg.tableWidget.currentRow())
+
+    def setupGui(self):
+        self.sessionsDlg.deletebutton.clicked.connect(lambda:startDeleteSession(self.dlg, self.sessionsDlg))
+        self.dlg.sessionsButton.clicked.connect(lambda:manageSessions(self))
+        self.dlg.sessionCombo.currentIndexChanged.connect(lambda:switchSession(self.dlg))
+        # add/remove additional query parameters
+        self.dlg.addButton.clicked.connect(self.addSearchParameter)
+        self.dlg.removeRowButton.clicked.connect(self.deleteSearchParameter)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -287,6 +296,8 @@ class HarmonyQGIS:
         if self.first_start == True:
             self.first_start = False
             self.dlg = HarmonyQGISDialog()
+            self.sessionsDlg = HarmonyQGISSessionsDialog()
+            self.setupGui()
         
         self.eventFilter = HarmonyEventFilter(self)
         self.dlg.installEventFilter(self.eventFilter)
@@ -295,9 +306,10 @@ class HarmonyQGIS:
         settings = QgsSettings()
 
         # Handle sessions
-        self.dlg.sessionAddButton.clicked.connect(lambda:addSession(self.dlg))
-        self.dlg.sessionDeleteButton.clicked.connect(lambda:deleteSession(self.dlg))
-
+        # self.dlg.sessionAddButton.clicked.connect(lambda:addSession(self.dlg))
+        
+        populateSessionsCombo(self.dlg)
+        
         # Fetch the currently loaded layers
         layers = QgsProject.instance().layerTreeRoot().children()
         layerNames = [layer.name() for layer in layers]
@@ -307,7 +319,7 @@ class HarmonyQGIS:
         # Populate the comboBox with names of all the loaded layers
         self.dlg.comboBox.addItems(layerNames)
 
-        # use the previous layer as the default if it is in the existing layers
+        # use the active layer as the default
         # layerName = settings.value("harmony_qgis/layer")
         # if layerName and layerName in layerNames:
         #     self.dlg.comboBox.setCurrentIndex(layerNames.index(layerName))
@@ -316,20 +328,20 @@ class HarmonyQGIS:
             self.dlg.comboBox.setCurrentIndex(layerNames.index(layer.name()))
 
         # fill the harmnoy url input with the saved setting if available
-        harmonyUrl = settings.value("harmony_qgis/harmony_url")
-        if harmonyUrl:
-            self.dlg.harmonyUrlLineEdit.setText(harmonyUrl)
+        # harmonyUrl = settings.value("harmony_qgis/harmony_url")
+        # if harmonyUrl:
+        self.dlg.harmonyUrlLineEdit.clear()
 
-        collectionId = settings.value("harmony_qgis/collection_id")
-        if collectionId:
-            self.dlg.collectionField.setText(collectionId)
+        # collectionId = settings.value("harmony_qgis/collection_id")
+        # if collectionId:
+        self.dlg.collectionField.clear()
 
-        version = settings.value("harmony_qgis/version") or "1.0.0"
-        self.dlg.versionField.setText(version)
+        # version = settings.value("harmony_qgis/version") or "1.0.0"
+        self.dlg.versionField.clear()
 
-        variable = settings.value("harmony_qgis/variable")
-        if variable:
-            self.dlg.variableField.setText(variable)
+        # variable = settings.value("harmony_qgis/variable")
+        # if variable:
+        self.dlg.variableField.clear()
 
         # clear the table
         self.dlg.tableWidget.setRowCount(0)
@@ -337,8 +349,8 @@ class HarmonyQGIS:
         # set the table header
         self.dlg.tableWidget.setHorizontalHeaderLabels('Parameter;Value'.split(';'))
 
-        # add a parameter/value when the 'Add' button is clicked
-        self.dlg.addButton.clicked.connect(self.addSearchParameter)
+        # DEBUG
+        # settings.setValue("saved_sessions", [])
 
         # show the dialog
         self.dlg.show()
@@ -346,56 +358,53 @@ class HarmonyQGIS:
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
+            # ask to save settings
+            sessionName = str(self.dlg.sessionCombo.currentText())
+            if sessionName == newSessionTag:
+                newName, ok = QInputDialog(self.dlg).getText(self.dlg, "Save session?", "Session name:", QLineEdit.Normal)
+                if ok and newName:
+                    saveSession(self.dlg, newName)
+            else:
+                saveSession(self.dlg, sessionName)
 
-            collectionId = str(self.dlg.collectionField.text())
-            version = str(self.dlg.versionField.text())
-            variable = str(self.dlg.variableField.text())
+            # collectionId = str(self.dlg.collectionField.text())
+            # version = str(self.dlg.versionField.text())
+            # variable = str(self.dlg.variableField.text())
 
-            layerName = str(self.dlg.comboBox.currentText())
-            # TODO handle the case where there is more than one layer by this name
-            layer = QgsProject.instance().mapLayersByName(layerName)[0]
-            opts = QgsVectorFileWriter.SaveVectorOptions()
-            opts.driverName = 'GeoJson'
-            tempFile = '/tmp/qgis.json'
-            QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
+            # layerName = str(self.dlg.comboBox.currentText())
+            # # TODO handle the case where there is more than one layer by this name
+            # layer = QgsProject.instance().mapLayersByName(layerName)[0]
+            # opts = QgsVectorFileWriter.SaveVectorOptions()
+            # opts.driverName = 'GeoJson'
+            # tempFile = '/tmp/qgis.json'
+            # QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
 
-            harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
-            path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
-            url = harmonyUrl + "/" + path
-            print(url)
+            # harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
+            # path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
+            # url = harmonyUrl + "/" + path
+            # print(url)
 
-            tempFileHandle = open(tempFile, 'r')
-            contents = tempFileHandle.read()
-            tempFileHandle.close()
-            geoJson = rewind(contents)
-            tempFileHandle = open(tempFile, 'w')
-            tempFileHandle.write(geoJson)
-            tempFileHandle.close()
-            tempFileHandle = open(tempFile, 'rb')
+            # tempFileHandle = open(tempFile, 'r')
+            # contents = tempFileHandle.read()
+            # tempFileHandle.close()
+            # geoJson = rewind(contents)
+            # tempFileHandle = open(tempFile, 'w')
+            # tempFileHandle.write(geoJson)
+            # tempFileHandle.close()
+            # tempFileHandle = open(tempFile, 'rb')
 
-            multipart_form_data = {
-                'shapefile': (layerName + '.geojson', tempFileHandle, 'application/geo+json')
-            }
+            # multipart_form_data = {
+            #     'shapefile': (layerName + '.geojson', tempFileHandle, 'application/geo+json')
+            # }
 
-            rowCount = self.dlg.tableWidget.rowCount()
-            for row in range(rowCount):
-                parameter = self.dlg.tableWidget.item(row, 0).text()
-                value = self.dlg.tableWidget.item(row, 1).text()
-                multipart_form_data[parameter] = (None, value)
+            # rowCount = self.dlg.tableWidget.rowCount()
+            # for row in range(rowCount):
+            #     parameter = self.dlg.tableWidget.item(row, 0).text()
+            #     value = self.dlg.tableWidget.item(row, 1).text()
+            #     multipart_form_data[parameter] = (None, value)
 
-            resp = requests.post(url, files=multipart_form_data, stream=True)
-            tempFileHandle.close()
-            os.remove(tempFile)
+            # resp = requests.post(url, files=multipart_form_data, stream=True)
+            # tempFileHandle.close()
+            # os.remove(tempFile)
 
-            handleHarmonyResponse(self.iface, resp, layerName, variable)
-
-            # save settings
-            if collectionId != "":
-                settings.setValue("harmony_qgis/collection_id", collectionId)
-            if version != "":
-                settings.setValue("harmony_qgis/version", version)
-            if variable != "":
-                settings.setValue("harmony_qgis/variable", variable)
-            if harmonyUrl != "":
-                settings.setValue("harmony_qgis/harmony_url", harmonyUrl)
-            settings.setValue("harmony_qgis/layer", layerName)
+            # handleHarmonyResponse(self.iface, resp, layerName, variable)

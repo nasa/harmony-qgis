@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>619</width>
-    <height>522</height>
+    <width>623</width>
+    <height>560</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QDialogButtonBox" name="button_box">
    <property name="geometry">
     <rect>
-     <x>250</x>
-     <y>470</y>
+     <x>260</x>
+     <y>520</y>
      <width>341</width>
      <height>32</height>
     </rect>
@@ -32,10 +32,10 @@
   <widget class="QTableWidget" name="tableWidget">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>280</y>
+     <x>70</x>
+     <y>290</y>
      <width>441</width>
-     <height>101</height>
+     <height>191</height>
     </rect>
    </property>
    <property name="columnCount">
@@ -47,40 +47,11 @@
    <column/>
    <column/>
   </widget>
-  <widget class="QLineEdit" name="lineEdit">
-   <property name="geometry">
-    <rect>
-     <x>90</x>
-     <y>400</y>
-     <width>311</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="clearButtonEnabled">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="addButton">
-   <property name="geometry">
-    <rect>
-     <x>410</x>
-     <y>400</y>
-     <width>91</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="toolTip">
-    <string>Add a query parameter</string>
-   </property>
-   <property name="text">
-    <string>Add</string>
-   </property>
-  </widget>
   <widget class="QLineEdit" name="harmonyUrlLineEdit">
    <property name="geometry">
     <rect>
      <x>150</x>
-     <y>70</y>
+     <y>80</y>
      <width>281</width>
      <height>21</height>
     </rect>
@@ -96,7 +67,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>70</y>
+     <y>80</y>
      <width>91</width>
      <height>20</height>
     </rect>
@@ -108,8 +79,8 @@
   <widget class="QComboBox" name="comboBox">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>100</y>
+     <x>140</x>
+     <y>110</y>
      <width>371</width>
      <height>31</height>
     </rect>
@@ -122,7 +93,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>100</y>
+     <y>110</y>
      <width>81</width>
      <height>20</height>
     </rect>
@@ -135,7 +106,7 @@
    <property name="geometry">
     <rect>
      <x>230</x>
-     <y>250</y>
+     <y>260</y>
      <width>141</width>
      <height>20</height>
     </rect>
@@ -148,7 +119,7 @@
    <property name="geometry">
     <rect>
      <x>160</x>
-     <y>150</y>
+     <y>160</y>
      <width>211</width>
      <height>21</height>
     </rect>
@@ -167,7 +138,7 @@
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>150</y>
+     <y>160</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -180,7 +151,7 @@
    <property name="geometry">
     <rect>
      <x>160</x>
-     <y>210</y>
+     <y>220</y>
      <width>211</width>
      <height>21</height>
     </rect>
@@ -199,7 +170,7 @@
    <property name="geometry">
     <rect>
      <x>100</x>
-     <y>210</y>
+     <y>220</y>
      <width>51</width>
      <height>20</height>
     </rect>
@@ -212,7 +183,7 @@
    <property name="geometry">
     <rect>
      <x>100</x>
-     <y>180</y>
+     <y>190</y>
      <width>51</width>
      <height>20</height>
     </rect>
@@ -225,7 +196,7 @@
    <property name="geometry">
     <rect>
      <x>160</x>
-     <y>180</y>
+     <y>190</y>
      <width>211</width>
      <height>21</height>
     </rect>
@@ -240,28 +211,12 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="clearTableButton">
-   <property name="geometry">
-    <rect>
-     <x>250</x>
-     <y>430</y>
-     <width>91</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="toolTip">
-    <string>Clear the additional parameters</string>
-   </property>
-   <property name="text">
-    <string>Clear Table</string>
-   </property>
-  </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
-     <x>30</x>
+     <x>70</x>
      <y>10</y>
-     <width>551</width>
+     <width>471</width>
      <height>51</height>
     </rect>
    </property>
@@ -306,23 +261,7 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QToolButton" name="sessionDeleteButton">
-    <property name="geometry">
-     <rect>
-      <x>430</x>
-      <y>10</y>
-      <width>26</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="toolTip">
-     <string>Delete a session</string>
-    </property>
-    <property name="text">
-     <string>-</string>
-    </property>
-   </widget>
-   <widget class="QToolButton" name="sessionAddButton">
+   <widget class="QToolButton" name="sessionsButton">
     <property name="geometry">
      <rect>
       <x>400</x>
@@ -335,41 +274,35 @@
      <string>Create a new session</string>
     </property>
     <property name="text">
-     <string>+</string>
+     <string>...</string>
     </property>
    </widget>
-   <widget class="QToolButton" name="sessionImportButton">
-    <property name="geometry">
-     <rect>
-      <x>460</x>
-      <y>10</y>
-      <width>26</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="toolTip">
-     <string>Import a session from a JSON file</string>
-    </property>
-    <property name="text">
-     <string>v</string>
-    </property>
-   </widget>
-   <widget class="QToolButton" name="sessionExportButton">
-    <property name="geometry">
-     <rect>
-      <x>490</x>
-      <y>10</y>
-      <width>26</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="toolTip">
-     <string>Export current session as JSON</string>
-    </property>
-    <property name="text">
-     <string>^</string>
-    </property>
-   </widget>
+  </widget>
+  <widget class="QToolButton" name="addButton">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>290</y>
+     <width>26</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>+</string>
+   </property>
+  </widget>
+  <widget class="QToolButton" name="removeRowButton">
+   <property name="geometry">
+    <rect>
+     <x>550</x>
+     <y>290</y>
+     <width>26</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>-</string>
+   </property>
   </widget>
  </widget>
  <tabstops>
@@ -379,13 +312,7 @@
   <tabstop>collectionField</tabstop>
   <tabstop>versionField</tabstop>
   <tabstop>variableField</tabstop>
-  <tabstop>lineEdit</tabstop>
-  <tabstop>addButton</tabstop>
-  <tabstop>clearTableButton</tabstop>
-  <tabstop>sessionAddButton</tabstop>
-  <tabstop>sessionExportButton</tabstop>
-  <tabstop>sessionImportButton</tabstop>
-  <tabstop>sessionDeleteButton</tabstop>
+  <tabstop>sessionsButton</tabstop>
   <tabstop>tableWidget</tabstop>
  </tabstops>
  <resources/>
