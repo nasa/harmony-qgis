@@ -313,6 +313,7 @@ class HarmonyQGIS:
         # Fetch the currently loaded layers
         layers = QgsProject.instance().layerTreeRoot().children()
         layerNames = [layer.name() for layer in layers]
+        layerNames.insert(0, "<None>")
 
         # Clear the contents of the comboBox from previous runs
         self.dlg.comboBox.clear()
@@ -367,44 +368,44 @@ class HarmonyQGIS:
             else:
                 saveSession(self.dlg, sessionName)
 
-            # collectionId = str(self.dlg.collectionField.text())
-            # version = str(self.dlg.versionField.text())
-            # variable = str(self.dlg.variableField.text())
+            collectionId = str(self.dlg.collectionField.text())
+            version = str(self.dlg.versionField.text())
+            variable = str(self.dlg.variableField.text())
 
-            # layerName = str(self.dlg.comboBox.currentText())
-            # # TODO handle the case where there is more than one layer by this name
-            # layer = QgsProject.instance().mapLayersByName(layerName)[0]
-            # opts = QgsVectorFileWriter.SaveVectorOptions()
-            # opts.driverName = 'GeoJson'
-            # tempFile = '/tmp/qgis.json'
-            # QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
+            layerName = str(self.dlg.comboBox.currentText())
+            # TODO handle the case where there is more than one layer by this name
+            layer = QgsProject.instance().mapLayersByName(layerName)[0]
+            opts = QgsVectorFileWriter.SaveVectorOptions()
+            opts.driverName = 'GeoJson'
+            tempFile = '/tmp/qgis.json'
+            QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
 
-            # harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
-            # path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
-            # url = harmonyUrl + "/" + path
-            # print(url)
+            harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
+            path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
+            url = harmonyUrl + "/" + path
+            QgsMessageLog.logMessage("URL:" + url, "Harmony Plugin")
 
-            # tempFileHandle = open(tempFile, 'r')
-            # contents = tempFileHandle.read()
-            # tempFileHandle.close()
-            # geoJson = rewind(contents)
-            # tempFileHandle = open(tempFile, 'w')
-            # tempFileHandle.write(geoJson)
-            # tempFileHandle.close()
-            # tempFileHandle = open(tempFile, 'rb')
+            tempFileHandle = open(tempFile, 'r')
+            contents = tempFileHandle.read()
+            tempFileHandle.close()
+            geoJson = rewind(contents)
+            tempFileHandle = open(tempFile, 'w')
+            tempFileHandle.write(geoJson)
+            tempFileHandle.close()
+            tempFileHandle = open(tempFile, 'rb')
 
-            # multipart_form_data = {
-            #     'shapefile': (layerName + '.geojson', tempFileHandle, 'application/geo+json')
-            # }
+            multipart_form_data = {
+                'shapefile': (layerName + '.geojson', tempFileHandle, 'application/geo+json')
+            }
 
-            # rowCount = self.dlg.tableWidget.rowCount()
-            # for row in range(rowCount):
-            #     parameter = self.dlg.tableWidget.item(row, 0).text()
-            #     value = self.dlg.tableWidget.item(row, 1).text()
-            #     multipart_form_data[parameter] = (None, value)
+            rowCount = self.dlg.tableWidget.rowCount()
+            for row in range(rowCount):
+                parameter = self.dlg.tableWidget.item(row, 0).text()
+                value = self.dlg.tableWidget.item(row, 1).text()
+                multipart_form_data[parameter] = (None, value)
 
-            # resp = requests.post(url, files=multipart_form_data, stream=True)
-            # tempFileHandle.close()
-            # os.remove(tempFile)
+            resp = requests.post(url, files=multipart_form_data, stream=True)
+            tempFileHandle.close()
+            os.remove(tempFile)
 
-            # handleHarmonyResponse(self.iface, resp, layerName, variable)
+            handleHarmonyResponse(self.iface, resp, layerName, variable)

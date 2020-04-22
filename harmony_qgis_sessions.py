@@ -73,6 +73,7 @@ def populateDialogFromSession(dlg, sessionData):
   dlg.versionField.setText(sessionData["version"])
   dlg.variableField.setText(sessionData["variable"])
   dlg.harmonyUrlLineEdit.setText(sessionData["harmony_url"])
+  dlg.comboBox.setCurrentText(sessionData["layer"])
   dlg.tableWidget.setRowCount(0)
   index = 0
   for row in sessionData["additional_parameters"]:
@@ -127,46 +128,3 @@ def saveSession(dlg, sessionName):
     savedSessions.append([sessionName, session])
 
   settings.setValue(sessionsKey, savedSessions)
-
-# def handleSession(harmonyQGIS):
-#   fname, _filter = QFileDialog.getOpenFileName(harmonyQGIS.dlg, 'Open file', '/tmp', "JSON files (*.json)")
-#   QgsMessageLog.logMessage(fname, "Harmony Plugin")
-#   return fname
-
-# def doesSessionExist(sessionName):
-#   settings = QgsSettings()
-#   savedSessions = settings.value(sessionsKey) or []
-#   for [name, _session] in savedSessions:
-#     if name == sessionName:
-#       return True
-#   return False
-  
-
-# def enterPressed(dlg):
-#   dlg.sessionCombo.setEditable(False)
-#   # check to see if a session with the given name already exists
-#   sessionName = dlg.sessionCombo.currentText()
-#   if doesSessionExist(sessionName):
-#     # dlg.sessionCombo.removeItem(dlg.sessionCombo.currentIndex())
-#     dlg.sessionCombo.setEditable(False)
-#     errorDialog = QMessageBox.critical(dlg, "Error", "A session with that name already exists")
-#   else:
-#     saveSession(dlg)
-
-# def addSession(dlg):
-#   QgsMessageLog.logMessage("Adding session...", "Harmony Plugin")
-#   dlg.sessionCombo.setEditable(True)
-#   dlg.sessionCombo.lineEdit().clear()
-#   dlg.sessionCombo.lineEdit().setFocus()
-#   dlg.sessionCombo.lineEdit().editingFinished.connect(lambda:enterPressed(dlg))
-
-# def deleteSession(dlg):
-#   QgsMessageLog.logMessage("Deleting session...", "Harmony Plugin")
-#   sessionName = dlg.sessionCombo.currentText()
-#   dlg.sessionCombo.removeItem(dlg.sessionCombo.currentIndex())
-#   settings = QgsSettings()
-#   savedSessions = settings.value(sessionsKey)
-#   if savedSessions:
-#     savedSessions.pop(sessionName)
-#     settings.setValue(sessionsKey, settings)
-

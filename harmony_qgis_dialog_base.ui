@@ -271,7 +271,7 @@
      </rect>
     </property>
     <property name="toolTip">
-     <string>Create a new session</string>
+     <string>Manage sessions</string>
     </property>
     <property name="text">
      <string>...</string>
@@ -287,6 +287,9 @@
      <height>22</height>
     </rect>
    </property>
+   <property name="toolTip">
+    <string>Add a row</string>
+   </property>
    <property name="text">
     <string>+</string>
    </property>
@@ -299,6 +302,9 @@
      <width>26</width>
      <height>22</height>
     </rect>
+   </property>
+   <property name="toolTip">
+    <string>Delete row</string>
    </property>
    <property name="text">
     <string>-</string>
