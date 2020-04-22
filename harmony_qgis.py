@@ -37,6 +37,8 @@ import math
 from .resources import *
 # Import the code for the dialog
 from .harmony_qgis_dialog import HarmonyQGISDialog
+from .harmony_qgis_sessions import handleSession, addSession, deleteSession
+from .HarmonyEventFilter import HarmonyEventFilter
 import os.path
 from .harmony_response import handleHarmonyResponse
 
@@ -118,7 +120,6 @@ def ringArea(coords):
 
 def rad(coord):
     return coord * math.pi / 180
-
 
 class HarmonyQGIS:
     """QGIS Plugin Implementation."""
@@ -286,9 +287,16 @@ class HarmonyQGIS:
         if self.first_start == True:
             self.first_start = False
             self.dlg = HarmonyQGISDialog()
+        
+        self.eventFilter = HarmonyEventFilter(self)
+        self.dlg.installEventFilter(self.eventFilter)
 
         # get stored settings
         settings = QgsSettings()
+
+        # Handle sessions
+        self.dlg.sessionAddButton.clicked.connect(lambda:addSession(self.dlg))
+        self.dlg.sessionDeleteButton.clicked.connect(lambda:deleteSession(self.dlg))
 
         # Fetch the currently loaded layers
         layers = QgsProject.instance().layerTreeRoot().children()
