@@ -8,7 +8,7 @@ qgisMinimumVersion=3.0
 description=Access the Harmony service broker to process and download Earth science data
 version=0.1
 author=James Norton
-email=jamesnorton@gmail.com
+email=james@element84.com
 
 about=Access Earth science data through the Harmony data/service broker
 

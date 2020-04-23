@@ -3,10 +3,8 @@
 #
 # Access the Harmony service broker to process and download Earth science data
 #							 -------------------
-#		begin				: 2020-04-05
+#		begin				: 2020-04-21
 #		git sha				: $Format:%H$
-#		copyright			: (C) 2020 by James Norton
-#		email				: jamesnorton@gmail.com
 # ***************************************************************************/
 #
 #/***************************************************************************

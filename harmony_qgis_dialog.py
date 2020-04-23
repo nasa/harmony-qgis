@@ -8,8 +8,8 @@
                              -------------------
         begin                : 2020-04-05
         git sha              : $Format:%H$
-        copyright            : (C) 2020 by James Norton
-        email                : jamesnorton@gmail.com
+        copyright            : (C) 2020 NASA
+        email                : james@element84.com
  ***************************************************************************/
 
 /***************************************************************************
