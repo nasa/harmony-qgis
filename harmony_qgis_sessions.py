@@ -85,14 +85,14 @@ def populateDialogFromSession(dlg, sessionData):
 def switchSession(dlg):
   settings = QgsSettings()
   sessionName = dlg.sessionCombo.currentText()
-  if sessionName == newSessionTag:
-    clearDialog(dlg)
-  else:
-    savedSessions = settings.value(sessionsKey) or []
-    for session in savedSessions:
-      if session[0] == sessionName:
-        populateDialogFromSession(dlg, session[1])
-        break
+  # if sessionName == newSessionTag:
+  #   # clearDialog(dlg)
+  # else:
+  savedSessions = settings.value(sessionsKey) or []
+  for session in savedSessions:
+    if session[0] == sessionName:
+      populateDialogFromSession(dlg, session[1])
+      break
 
 def saveSession(dlg, sessionName):
   # sessionName = dlg.sessionCombo.currentText()
