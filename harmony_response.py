@@ -9,7 +9,7 @@ import tempfile
 import os
 import requests
 
-from qgis.core import QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
+from qgis.core import Qgis, QgsApplication, QgsProcessingFeedback, QgsProcessingContext, QgsTaskManager, QgsTask, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
 
 # Session accessible by callers
 session = requests.session()
@@ -69,6 +69,7 @@ def get_data_urls(response):
   Returns:
       string[] -- An array of URLs for data links
   """
+  print(response.json())
   return [link['href'] for link in response.json()['links'] if link.get('rel', 'data') == 'data']
 
 def show(iface, response, layerName):
@@ -79,6 +80,53 @@ def show(iface, response, layerName):
       fd.write(chunk)
   iface.addRasterLayer(filename, layerName)
   # os.remove(filename)
+
+def worker(task, response, count):
+  progress = 100.0 * count / 5.0
+  task.setProgress(progress)
+  body = response.json()
+  QgsMessageLog.logMessage(json.dumps(body), 'Harmony Plugin')
+  QgsMessageLog.logMessage('Working...', 'Harmony Plugin')
+  QgsMessageLog.logMessage('Count = {}'.format(count), 'Harmony Plugin')
+  sleep(5)
+  count = count + 1
+  status = 'working'
+  if count == 5:
+    QgsMessageLog.logMessage('Last worker done', 'Harmony Plugin')
+    status = 'done'
+  else:
+    QgsMessageLog.logMessage('Worker done', 'Harmony Plugin')
+    
+  return { 'count': count, 'status': status, 'response': response }
+
+def completed(exception, result=None):
+  """Called when the worker tasks complete
+    Arguments:
+      exception {Exception} -- if an error occurs
+      result {} - the response from  the worker task
+  """
+  QgsMessageLog.logMessage('Handling worker completion', 'Harmony Plugin')
+  if exception is None:
+    if result is None:
+      QgsMessageLog.logMessage('Completed with no error and no result', 'Harmony Plugin')
+    else:
+      QgsMessageLog.logMessage(
+                'Task completed',
+                'Harmony Plugin')
+      count = result['count']
+      status = result['status']
+      if status != 'done':
+        QgsMessageLog.logMessage('Starting next worker', 'Harmony Plugin')
+        response = result['response']
+        task = QgsTask.fromFunction('Worker', worker, on_finished=completed, response=response, count=count)
+        globals()['task'] = task
+        QgsApplication.taskManager().addTask(globals()['task'])
+        # QgsApplication.taskManager().addTask(task)
+      else:
+        QgsMessageLog.logMessage('Completed with no errors')
+  else:
+    QgsMessageLog.logMessage("Exception: {}".format(exception), 'Harmony Plugin')
+    raise exception
 
 def show_async(iface, response):
   """Shows an asynchronous Harmony response.
@@ -127,7 +175,12 @@ def show_async(iface, response):
   return response
 
 def handleAsyncResponse(iface, response):
-  show_async(iface, response)
+  # show_async(iface, response)
+  QgsMessageLog.logMessage('Async request started', 'Harmony Plugin')
+  task = QgsTask.fromFunction('Worker', worker, on_finished=completed, response=response, count=1)
+  globals()['task'] = task
+  QgsApplication.taskManager().addTask(globals()['task'])
+  QgsMessageLog.logMessage('Workers started', 'Harmony Plugin')
 
 def handleSyncResponse(iface, response, layerName, variable):
   with open('/tmp/harmony_output_image.tif', 'wb') as fd:

@@ -297,6 +297,7 @@ class HarmonyQGIS:
             url = harmonyUrl + "/" + path
 
             layerName = str(self.dlg.comboBox.currentText())
+            QgsMessageLog.logMessage(layerName)
             if layerName == "<None>":
                 # use a GET request
                 rowCount = self.dlg.tableWidget.rowCount()
@@ -339,6 +340,6 @@ class HarmonyQGIS:
 
                 resp = requests.post(url, files=multipart_form_data, stream=True)
                 tempFileHandle.close()
-                os.remove(tempFile)
+                # os.remove(tempFile)
 
             handleHarmonyResponse(self.iface, resp, layerName, variable)
