@@ -25,11 +25,12 @@ from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QInputDialog, QLineEd
 from qgis.core import QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
 # from qgis.utils import iface
 from zipfile import ZipFile
-from tempfile import NamedTemporaryFile
+import tempfile
 import requests
 import copy
 import json
 import math
+import platform
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -241,12 +242,16 @@ class HarmonyQGIS:
         self.dlg.comboBox.addItems(layerNames)
 
         # use the active layer as the default
-        # layerName = settings.value("harmony_qgis/layer")
-        # if layerName and layerName in layerNames:
-        #     self.dlg.comboBox.setCurrentIndex(layerNames.index(layerName))
         layer = self.iface.activeLayer()
         if layer:
             self.dlg.comboBox.setCurrentIndex(layerNames.index(layer.name()))
+
+        # set the download directory to the saved value or the system temporary directory
+        tempDir = "/tmp"
+        if platform.system() == 'Windows':
+            tempDir = tempfile.gettempdir()
+        downloadDir = settings.value("harmony_qgis/download_dir") or tempDir
+        self.dlg.harmonyDownloadDirEdit.setText(downloadDir)
 
         # fill the harmnoy url input with the saved setting if available
         # harmonyUrl = settings.value("harmony_qgis/harmony_url")
@@ -288,6 +293,9 @@ class HarmonyQGIS:
             else:
                 saveSession(self.dlg, sessionName)
 
+            # save the dowload diretory in the UI to settings
+            settings.setValue("harmony_qgis/download_dir", self.dlg.harmonyDownloadDirEdit.text())
+
             collectionId = str(self.dlg.collectionField.text())
             version = str(self.dlg.versionField.text())
             variable = str(self.dlg.variableField.text())
@@ -313,10 +321,9 @@ class HarmonyQGIS:
                 layer = QgsProject.instance().mapLayersByName(layerName)[0]
                 opts = QgsVectorFileWriter.SaveVectorOptions()
                 opts.driverName = 'GeoJson'
-                tempFile = '/tmp/qgis.json'
+                tempFile = tempfile.gettempdir() + os.path.sep + 'qgis.json'
                 QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
-
-                
+             
                 QgsMessageLog.logMessage("URL:" + url, "Harmony Plugin")
 
                 tempFileHandle = open(tempFile, 'r')
@@ -340,6 +347,5 @@ class HarmonyQGIS:
 
                 resp = requests.post(url, files=multipart_form_data, stream=True)
                 tempFileHandle.close()
-                # os.remove(tempFile)
 
             handleHarmonyResponse(self.iface, resp, layerName, variable)

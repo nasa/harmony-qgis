@@ -5,7 +5,7 @@ This plugin allows the user to select areas on the map and upload them as querie
 ## Requirements
 QGIS version 3.12 or higher
 
-## Installation
+## Installation (Mac)
 1. Clone this repository under the plugins directory for QGIS (/Users/<User Name>/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins on a Mac)
 2. Enable the plugin 
 3. Start/restart QGIS

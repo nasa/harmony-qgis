@@ -1,15 +1,14 @@
 from datetime import datetime
 from time import sleep
+from pathlib import Path
 import json
-
 import http.client as http_client
 import logging
-
 import tempfile
 import os
 import requests
 
-from qgis.core import Qgis, QgsApplication, QgsProcessingFeedback, QgsProcessingContext, QgsTaskManager, QgsTask, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
+from qgis.core import Qgis, QgsApplication, QgsProject, QgsProcessingFeedback, QgsProcessingContext, QgsSettings, QgsTaskManager, QgsTask, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
 
 # Session accessible by callers
 session = requests.session()
@@ -72,32 +71,43 @@ def get_data_urls(response):
   print(response.json())
   return [link['href'] for link in response.json()['links'] if link.get('rel', 'data') == 'data']
 
-def show(iface, response, layerName):
-  QgsMessageLog.logMessage('Adding layer' + layerName, 'Harmony Plugin')
-  filename = '/tmp/harmony_output_image' + layerName + '.tif'
+def download_image(response, layerName):
+  settings = QgsSettings()
+  directory = settings.value("harmony_qgis/download_dir")
+  Path(directory).mkdir(parents=True, exist_ok=True)
+  filename = directory + os.path.sep + 'harmony_output_image' + layerName + '.tif'
   with open(filename, 'wb') as fd:
     for chunk in response.iter_content(chunk_size=128):
       fd.write(chunk)
-  iface.addRasterLayer(filename, layerName)
-  # os.remove(filename)
+  return filename
 
-def worker(task, response, count):
-  progress = 100.0 * count / 5.0
-  task.setProgress(progress)
+def pollResults(task, iface, response, link_count):
   body = response.json()
   QgsMessageLog.logMessage(json.dumps(body), 'Harmony Plugin')
-  QgsMessageLog.logMessage('Working...', 'Harmony Plugin')
-  QgsMessageLog.logMessage('Count = {}'.format(count), 'Harmony Plugin')
-  sleep(5)
-  count = count + 1
-  status = 'working'
-  if count == 5:
-    QgsMessageLog.logMessage('Last worker done', 'Harmony Plugin')
-    status = 'done'
+  progress = int(body['progress'])
+  task.setProgress(progress)
+  links = get_data_urls(response)
+  new_links = links[slice(link_count, None)]
+  new_layers = []
+  link_count = len(links)
+
+  for link in new_links:
+      if link.startswith('http'):
+        lastSlash = link.rindex('/')
+        layerName = link[lastSlash + 1:]
+        extensionIndex = layerName.rindex('.')
+        if extensionIndex >= 0:
+          layerName = layerName[0:extensionIndex]
+        fileName = download_image(get(link), layerName)
+        new_layers.append((layerName, fileName))
+
+  status = body['status']
+  if status not in ['successful', 'failed']:
+    sleep(1)
+    response = session.get(response.url)
   else:
-    QgsMessageLog.logMessage('Worker done', 'Harmony Plugin')
-    
-  return { 'count': count, 'status': status, 'response': response }
+    status = 'done'
+  return { 'iface': iface, 'response': response, 'status': status, 'link_count': link_count, 'new_layers': new_layers }
 
 def completed(exception, result=None):
   """Called when the worker tasks complete
@@ -113,81 +123,42 @@ def completed(exception, result=None):
       QgsMessageLog.logMessage(
                 'Task completed',
                 'Harmony Plugin')
-      count = result['count']
+      QgsMessageLog.logMessage("Result: {}".format(result), 'Harmony Plugin')
+      iface = result['iface']
       status = result['status']
+      link_count = result['link_count']
+      new_layers = result['new_layers']
+      new_iface_layers = []
+      for layerName, fileName in new_layers:
+        layer = iface.addRasterLayer(fileName, layerName)
+        if not layer or not layer.isValid():
+          QgsMessageLog.logMessage("Failed to create layer {}".format(layerName), 'Harmony Plugin')
+
       if status != 'done':
         QgsMessageLog.logMessage('Starting next worker', 'Harmony Plugin')
         response = result['response']
-        task = QgsTask.fromFunction('Worker', worker, on_finished=completed, response=response, count=count)
+        task = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=link_count)
         globals()['task'] = task
         QgsApplication.taskManager().addTask(globals()['task'])
-        # QgsApplication.taskManager().addTask(task)
       else:
         QgsMessageLog.logMessage('Completed with no errors')
   else:
     QgsMessageLog.logMessage("Exception: {}".format(exception), 'Harmony Plugin')
     raise exception
 
-def show_async(iface, response):
-  """Shows an asynchronous Harmony response.
-
-  Polls the output, displaying it as it changes, displaying any http data
-  links in the response as they arrive, and ultimately ending once the request
-  is successful or failed
-
-  Arguments:
-      response {response.Response} -- the response to display
-
-  Returns:
-      response.Response -- the response from the final successful or failed poll
-  """
-  def show_response(iface, response, link_count):
-    QgsMessageLog.logMessage(json.dumps(response.json(), indent=2), 'Harmony Plugin')
-    links = get_data_urls(response)
-    new_links = links[slice(link_count, None)]
-    for link in new_links:
-      if link.startswith('http'):
-        lastSlash = link.rindex('/')
-        layerName = link[lastSlash + 1:]
-        extensionIndex = layerName.rindex('.')
-        if extensionIndex >= 0:
-          layerName = layerName[0:extensionIndex]
-        show(iface, get(link), layerName)
-    return len(links)
-
-  displayed_link_count = 0
-  body = response.json()
-  displayed_link_count = show_response(iface, response, displayed_link_count)
-  waiting_message_printed = False
-  while body['status'] not in ['successful', 'failed']:
-    if not waiting_message_printed:
-      QgsMessageLog.logMessage('Waiting for updates...', 'Harmony Plugin')
-      waiting_message_printed = True
-    sleep(1)
-    progress = body['progress']
-    status = body['status']
-    response = session.get(response.url)
-    body = response.json()
-    if progress != body['progress'] or status != body['status']:
-      displayed_link_count = show_response(iface, response, displayed_link_count)
-      waiting_message_printed = False
-  QgsMessageLog.logMessage('Async request is complete', 'Harmony Plugin')
-  return response
-
 def handleAsyncResponse(iface, response):
-  # show_async(iface, response)
   QgsMessageLog.logMessage('Async request started', 'Harmony Plugin')
-  task = QgsTask.fromFunction('Worker', worker, on_finished=completed, response=response, count=1)
+  task = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=0)
   globals()['task'] = task
   QgsApplication.taskManager().addTask(globals()['task'])
   QgsMessageLog.logMessage('Workers started', 'Harmony Plugin')
 
 def handleSyncResponse(iface, response, layerName, variable):
-  with open('/tmp/harmony_output_image.tif', 'wb') as fd:
+  with open(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', 'wb') as fd:
     for chunk in response.iter_content(chunk_size=128):
       fd.write(chunk)
 
-  iface.addRasterLayer('/tmp/harmony_output_image.tif', layerName + '-' + variable)
+  iface.addRasterLayer(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', layerName + '-' + variable)
 
 def handleHarmonyResponse(iface, response, layerName, variable):
   content_type = response.headers['Content-Type']
