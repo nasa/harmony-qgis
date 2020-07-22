@@ -305,7 +305,7 @@ class HarmonyQGIS:
             url = harmonyUrl + "/" + path
 
             layerName = str(self.dlg.comboBox.currentText())
-            QgsMessageLog.logMessage(layerName)
+            QgsMessageLog.logMessage('Using layer ' + layerName, 'Harmony Plugin')
             if layerName == "<None>":
                 # use a GET request
                 rowCount = self.dlg.tableWidget.rowCount()

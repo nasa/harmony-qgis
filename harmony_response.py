@@ -13,6 +13,10 @@ from qgis.core import Qgis, QgsApplication, QgsProject, QgsProcessingFeedback, Q
 # Session accessible by callers
 session = requests.session()
 
+# keep track of progress so we can reset when QGIS wipes out the progress bar after each background
+# task completes
+total_progress = 0
+
 def debug_http():
   """Adds debugging output to HTTP requests to show redirects, headers, etc
   """
@@ -82,14 +86,16 @@ def download_image(response, layerName):
   return filename
 
 def pollResults(task, iface, response, link_count):
+  global total_progress
   body = response.json()
-  QgsMessageLog.logMessage(json.dumps(body), 'Harmony Plugin')
-  progress = int(body['progress'])
-  task.setProgress(progress)
   links = get_data_urls(response)
   new_links = links[slice(link_count, None)]
   new_layers = []
   link_count = len(links)
+
+  task.setProgress(total_progress)
+
+  progress = int(body['progress'])
 
   for link in new_links:
       if link.startswith('http'):
@@ -100,11 +106,17 @@ def pollResults(task, iface, response, link_count):
           layerName = layerName[0:extensionIndex]
         fileName = download_image(get(link), layerName)
         new_layers.append((layerName, fileName))
+  
+  task.setProgress(progress)
+  if progress == 100:
+    total_progress = 0
+  else:
+    total_progress = progress
 
   status = body['status']
   if status not in ['successful', 'failed']:
     sleep(1)
-    response = session.get(response.url)
+    response = requests.get(response.url)
   else:
     status = 'done'
   return { 'iface': iface, 'response': response, 'status': status, 'link_count': link_count, 'new_layers': new_layers }
@@ -115,15 +127,10 @@ def completed(exception, result=None):
       exception {Exception} -- if an error occurs
       result {} - the response from  the worker task
   """
-  QgsMessageLog.logMessage('Handling worker completion', 'Harmony Plugin')
   if exception is None:
     if result is None:
       QgsMessageLog.logMessage('Completed with no error and no result', 'Harmony Plugin')
     else:
-      QgsMessageLog.logMessage(
-                'Task completed',
-                'Harmony Plugin')
-      QgsMessageLog.logMessage("Result: {}".format(result), 'Harmony Plugin')
       iface = result['iface']
       status = result['status']
       link_count = result['link_count']
@@ -135,23 +142,23 @@ def completed(exception, result=None):
           QgsMessageLog.logMessage("Failed to create layer {}".format(layerName), 'Harmony Plugin')
 
       if status != 'done':
-        QgsMessageLog.logMessage('Starting next worker', 'Harmony Plugin')
         response = result['response']
         task = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=link_count)
         globals()['task'] = task
         QgsApplication.taskManager().addTask(globals()['task'])
       else:
-        QgsMessageLog.logMessage('Completed with no errors')
+        status = "Download complete - {} new layers created".format(link_count)
+        QgsMessageLog.logMessage(status, 'Harmony Plugin')
+        iface.mainWindow().statusBar().showMessage(status)
   else:
     QgsMessageLog.logMessage("Exception: {}".format(exception), 'Harmony Plugin')
     raise exception
 
 def handleAsyncResponse(iface, response):
-  QgsMessageLog.logMessage('Async request started', 'Harmony Plugin')
+  iface.mainWindow().statusBar().showMessage(u'Downloading Harmony results')
   task = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=0)
   globals()['task'] = task
   QgsApplication.taskManager().addTask(globals()['task'])
-  QgsMessageLog.logMessage('Workers started', 'Harmony Plugin')
 
 def handleSyncResponse(iface, response, layerName, variable):
   with open(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', 'wb') as fd:
@@ -163,7 +170,6 @@ def handleSyncResponse(iface, response, layerName, variable):
 def handleHarmonyResponse(iface, response, layerName, variable):
   content_type = response.headers['Content-Type']
   message = 'Content-type is: ' + content_type
-  QgsMessageLog.logMessage(message, 'Harmony Plugin')
 
   if content_type == 'application/json; charset=utf-8':
     handleAsyncResponse(iface, response)

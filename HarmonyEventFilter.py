@@ -8,7 +8,7 @@ class HarmonyEventFilter(QtCore.QObject):
         self.plugin = plugin
 
     def eventFilter(self, obj, event):
-        if obj is self.plugin.dlg:
+        if self.plugin.dlg and obj is self.plugin.dlg:
             if event.type() == QtCore.QEvent.KeyPress:
                 if event.key() in (QtCore.Qt.Key_Return, 
                     QtCore.Qt.Key_Escape, 
@@ -17,5 +17,4 @@ class HarmonyEventFilter(QtCore.QObject):
             if event.type() == QtCore.QEvent.Close:
                 event.ignore()
                 return True
-        # return super(self.plugin.iface.mainWindow(), self).eventFilter(obj, event)
         return False
