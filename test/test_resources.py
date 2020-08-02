@@ -18,7 +18,7 @@ from qgis.PyQt.QtGui import QIcon
 
 
 
-class HarmonyQGISDialogTest(unittest.TestCase):
+class HarmonyQGISResourcesTest(unittest.TestCase):
     """Test rerources work."""
 
     def setUp(self):
@@ -30,12 +30,12 @@ class HarmonyQGISDialogTest(unittest.TestCase):
         pass
 
     def test_icon_png(self):
-        """Test we can click OK."""
+        """Test we can make an icon."""
         path = ':/plugins/HarmonyQGIS/icon.png'
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 
-if __name__ == "__main__":
+def run_all():
     suite = unittest.makeSuite(HarmonyQGISResourcesTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

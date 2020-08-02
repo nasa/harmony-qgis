@@ -3,6 +3,7 @@
 
 import sys
 import logging
+import traceback
 
 
 LOGGER = logging.getLogger('QGIS')
@@ -22,35 +23,43 @@ def get_qgis_app():
     If QGIS is already running the handle to that app will be returned.
     """
 
+    print("QGIS BEING INITIALIZED ++++++++++++++++++++++++++++++++")
+
     try:
-        from qgis.PyQt import QtGui, QtCore
+        from qgis.PyQt.QtCore import QSize
+        from qgis.PyQt import QtGui
+        from qgis.PyQt.QtWidgets import QWidget
         from qgis.core import QgsApplication
         from qgis.gui import QgsMapCanvas
         from .qgis_interface import QgisInterface
     except ImportError:
+        track = traceback.format_exc()
+        print(track)
         return None, None, None, None
 
     global QGIS_APP  # pylint: disable=W0603
 
+    
     if QGIS_APP is None:
         gui_flag = True  # All test will run qgis in gui mode
         #noinspection PyPep8Naming
-        QGIS_APP = QgsApplication(sys.argv, gui_flag)
+        QGIS_APP = QgsApplication([], gui_flag)
         # Make sure QGIS_PREFIX_PATH is set in your env if needed!
         QGIS_APP.initQgis()
+        print("QGIS INITIALIZED ++++++++++++++++++++++++++++++++")
         s = QGIS_APP.showSettings()
         LOGGER.debug(s)
 
     global PARENT  # pylint: disable=W0603
     if PARENT is None:
         #noinspection PyPep8Naming
-        PARENT = QtGui.QWidget()
+        PARENT = QWidget()
 
     global CANVAS  # pylint: disable=W0603
     if CANVAS is None:
         #noinspection PyPep8Naming
         CANVAS = QgsMapCanvas(PARENT)
-        CANVAS.resize(QtCore.QSize(400, 400))
+        CANVAS.resize(QSize(400, 400))
 
     global IFACE  # pylint: disable=W0603
     if IFACE is None:
