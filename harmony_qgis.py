@@ -211,12 +211,15 @@ class HarmonyQGIS:
         self.dlg.addButton.clicked.connect(self.addSearchParameter)
         self.dlg.removeRowButton.clicked.connect(self.deleteSearchParameter)
 
-    def getResults(self):
+    def getResults(self, background=True):
         collectionId = str(self.dlg.collectionField.text())
         version = str(self.dlg.versionField.text())
         variable = str(self.dlg.variableField.text())
 
         harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
+        if harmonyUrl == None or harmonyUrl == "":
+            harmonyUrl = "https://harmony.uat.earthdata.nasa.gov"
+
         path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
         url = harmonyUrl + "/" + path
 
@@ -264,7 +267,7 @@ class HarmonyQGIS:
             resp = requests.post(url, files=multipart_form_data, stream=True)
             tempFileHandle.close()
 
-        handleHarmonyResponse(self.iface, resp, layerName, variable)
+        handleHarmonyResponse(self.iface, resp, layerName, variable, background)
 
     def run(self):
         """Run method that performs all the real work"""

@@ -16,72 +16,70 @@ import unittest
 
 from qgis.PyQt import QtWidgets
 from qgis.utils import plugins
+from qgis.PyQt.QtCore import QVariant
+from qgis.core import QgsVectorLayer, QgsFeature, QgsProject, QgsGeometry, QgsPointXY
 
-# from harmony_qgis import HarmonyQGIS
 from harmony_response import handleHarmonyResponse
 
 from .utilities import get_qgis_app
-# QGIS_APP, CANVAS, IFACE, PARENT = get_qgis_app()
 from qgis.testing.mocked import get_iface
 
+def hasLayer(layers, name):
+  for layer in layers:
+    if layer.name() == name:
+      return True 
+  return False
 
 class HarmonyQGISTest(unittest.TestCase):
     """Test plugin works."""
 
     def setUp(self):
         """Runs before each test."""
-        qgis_app, canvas, iface, parent = get_qgis_app()
-        self.qgis_app = qgis_app
-        print ("PLUGINS=================================")
-        print(plugins)
-        print(dir (plugins['harmony-qgis']))
-        print ("====================PLUGINS=================================")
         self.harmony_qgis = plugins['harmony-qgis']
-        # self.iface = get_iface()
-        # self.plugin = HarmonyQGIS(self.iface)
+        self.harmony_qgis.setupGui()
+        self.dialog = self.harmony_qgis.dlg
+
+        # create a layer we can use to search with
+        vl = QgsVectorLayer("Point", "MyPointLayer", "memory")
+        pr = vl.dataProvider()
+        f = QgsFeature()
+        f.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(-74,51)))
+        pr.addFeature(f)
+        vl.updateExtents() 
+        QgsProject.instance().addMapLayer(vl)
+
+        layerDict = QgsProject.instance().mapLayers()
+        self.layerCount = len(layerDict)
 
     def tearDown(self):
         """Runs after each test."""
-        # self.iface = None
-        self.plugin = None
+        self.harmony_qgis = None
+        self.dialog = None
 
-    def test_dialog_ok(self):
-        """Test we can click OK."""
-        
-        print(type(self.qgis_app))
-        dir(self.qgis_app)
-        # self.assertIsNotNone(self.iface)
-        self.assertIsNotNone(self.qgis_app)
-
-        # self.harmony_qgis.run()
-
-        self.dialog = self.harmony_qgis.dlg
-
+    def test_plugin(self):
+        """Test we can retrieve layers from Harmony with the plugin (this is a SLOW test)."""
+  
         self.assertIsNotNone(self.dialog)
         
+        # fill in the request fields and choose our layer
+        collectionField = self.dialog.collectionField
+        collectionField.insert("C1233800302-EEDTEST")
+        versionField = self.dialog.versionField
+        versionField.insert("1.0.0")
+        variableField = self.dialog.variableField
+        variableField.insert("red_var")
+        comboBox = self.dialog.comboBox
+        comboBox.clear()
+        comboBox.addItem("MyPointLayer")
+        comboBox.setCurrentIndex(0)
 
-        # self.assertIsNotNone(self.plugin)
-        # self.plugin.run()
-        # button = self.dlg.button_box.button(QtWidgets.QDialogButtonBox.Ok)
-        # button.click()
-        # result = self.plugin.dlg.result()
-        # self.assertEqual(result, QtWidgets.QDialog.Accepted)
-        self.assertEqual(1,1)
+        # run the request
+        self.harmony_qgis.getResults(background = False)
 
-    # def test_collection_field(self):
-    #     """Test we can set the collection field."""
-
-    #     field = self.dialog.collectionField
-    #     field.insert("Collection123")
-
-    #     self.assertEqual(field.text(), "Collection123")
-
-    # def test_dialog_cancel(self):
-    #     """Test we can click cancel."""
-    #     button = self.dialog.button_box.button(QtWidgets.QDialogButtonBox.Cancel)
-    #     button.click()
-    #     result = self.dialog.result()
-    #     self.assertEqual(result, QtWidgets.QDialog.Rejected)
+        # check to see if the layers were created
+        layerDict = QgsProject.instance().mapLayers()
+        self.assertEqual(len(layerDict), self.layerCount + 20)
+        self.assertTrue(hasLayer(layerDict.values(), '001_00_7f00ff_global_red_var'))
 
 def run_all():
     suite = unittest.makeSuite(HarmonyQGISTest)

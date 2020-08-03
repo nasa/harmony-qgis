@@ -41,6 +41,13 @@ class HarmonyQGISDialogTest(unittest.TestCase):
         result = self.dialog.result()
         self.assertEqual(result, QtWidgets.QDialog.Accepted)
 
+    def test_dialog_cancel(self):
+        """Test we can click cancel."""
+        button = self.dialog.button_box.button(QtWidgets.QDialogButtonBox.Cancel)
+        button.click()
+        result = self.dialog.result()
+        self.assertEqual(result, QtWidgets.QDialog.Rejected)
+
     def test_collection_field(self):
         """Test we can set the collection field."""
 
@@ -49,12 +56,33 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
         self.assertEqual(field.text(), "Collection123")
 
-    def test_dialog_cancel(self):
-        """Test we can click cancel."""
-        button = self.dialog.button_box.button(QtWidgets.QDialogButtonBox.Cancel)
-        button.click()
-        result = self.dialog.result()
-        self.assertEqual(result, QtWidgets.QDialog.Rejected)
+    def test_version_field(self):
+        """Test we can set the version field."""
+
+        field = self.dialog.versionField
+        field.insert("1.0.0")
+
+        self.assertEqual(field.text(), "1.0.0")
+
+    def test_variable_field(self):
+        """Test we can set the variable field."""
+
+        field = self.dialog.variableField
+        field.insert("red_var")
+
+        self.assertEqual(field.text(), "red_var")
+
+    def test_combobox(self):
+        """Test we can set the layer combobox."""
+
+        comboBox = self.dialog.comboBox
+        comboBox.clear()
+        comboBox.addItem("MyPointLayer")
+        comboBox.addItem("MyPolyLayer")
+        comboBox.addItem("MyLineLayer")
+        comboBox.setCurrentIndex(1)
+
+        self.assertEqual(comboBox.currentText(), "MyPolyLayer")
 
 def run_all():
     suite = unittest.makeSuite(HarmonyQGISDialogTest)

@@ -23,8 +23,6 @@ def get_qgis_app():
     If QGIS is already running the handle to that app will be returned.
     """
 
-    print("QGIS BEING INITIALIZED ++++++++++++++++++++++++++++++++")
-
     try:
         from qgis.PyQt.QtCore import QSize
         from qgis.PyQt import QtGui
@@ -33,8 +31,6 @@ def get_qgis_app():
         from qgis.gui import QgsMapCanvas
         from .qgis_interface import QgisInterface
     except ImportError:
-        track = traceback.format_exc()
-        print(track)
         return None, None, None, None
 
     global QGIS_APP  # pylint: disable=W0603
@@ -46,7 +42,6 @@ def get_qgis_app():
         QGIS_APP = QgsApplication([], gui_flag)
         # Make sure QGIS_PREFIX_PATH is set in your env if needed!
         QGIS_APP.initQgis()
-        print("QGIS INITIALIZED ++++++++++++++++++++++++++++++++")
         s = QGIS_APP.showSettings()
         LOGGER.debug(s)
 

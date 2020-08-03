@@ -38,9 +38,7 @@ def request(*args, **kwargs):
   req = requests.Request(*args, **kwargs)
   prepped = session.prepare_request(req)
 
-  print('%s %s' % (prepped.method, prepped.path_url))
   response = session.send(prepped)
-  print('Received %s' % (response.headers.get('Content-Type', 'unknown content',)))
   return response
 
 def get(*args, **kwargs):
@@ -72,12 +70,11 @@ def get_data_urls(response):
   Returns:
       string[] -- An array of URLs for data links
   """
-  print(response.json())
   return [link['href'] for link in response.json()['links'] if link.get('rel', 'data') == 'data']
 
 def download_image(response, layerName):
   settings = QgsSettings()
-  directory = settings.value("harmony_qgis/download_dir")
+  directory = settings.value("harmony_qgis/download_dir") or tempfile.gettempdir()
   Path(directory).mkdir(parents=True, exist_ok=True)
   filename = directory + os.path.sep + 'harmony_output_image' + layerName + '.tif'
   with open(filename, 'wb') as fd:
@@ -93,8 +90,8 @@ def pollResults(task, iface, response, link_count):
   new_layers = []
   link_count = len(links)
 
-  task.setProgress(total_progress)
-
+  if task:
+    task.setProgress(total_progress)
   progress = int(body['progress'])
 
   for link in new_links:
@@ -106,8 +103,8 @@ def pollResults(task, iface, response, link_count):
           layerName = layerName[0:extensionIndex]
         fileName = download_image(get(link), layerName)
         new_layers.append((layerName, fileName))
-  
-  task.setProgress(progress)
+  if task:
+    task.setProgress(progress)
   if progress == 100:
     total_progress = 0
   else:
@@ -143,8 +140,7 @@ def completed(exception, result=None):
 
       if status != 'done':
         response = result['response']
-        task = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=link_count)
-        globals()['task'] = task
+        globals()['task'] = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=link_count)
         QgsApplication.taskManager().addTask(globals()['task'])
       else:
         status = "Download complete - {} new layers created".format(link_count)
@@ -154,11 +150,27 @@ def completed(exception, result=None):
     QgsMessageLog.logMessage("Exception: {}".format(exception), 'Harmony Plugin')
     raise exception
 
-def handleAsyncResponse(iface, response):
+def handleAsyncResponse(iface, response, background):
   iface.mainWindow().statusBar().showMessage(u'Downloading Harmony results')
-  task = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=0)
-  globals()['task'] = task
-  QgsApplication.taskManager().addTask(globals()['task'])
+  if background:
+    globals()['task'] = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=0)
+    QgsApplication.taskManager().addTask(globals()['task'])
+  else:
+    result = pollResults(None, iface, response, 0)
+    while result['status'] != 'done':
+      result = pollResults(None, iface, result['response'], result['link_count'])
+    response = result['response']
+    for link in get_data_urls(response):
+      if link.startswith('http'):
+        lastSlash = link.rindex('/')
+        layerName = link[lastSlash + 1:]
+        extensionIndex = layerName.rindex('.')
+        if extensionIndex >= 0:
+          layerName = layerName[0:extensionIndex]
+        fileName = download_image(get(link), layerName)
+        layer = iface.addRasterLayer(fileName, layerName)
+        if not layer or not layer.isValid():
+          QgsMessageLog.logMessage("Failed to create layer {}".format(layerName), 'Harmony Plugin')
 
 def handleSyncResponse(iface, response, layerName, variable):
   with open(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', 'wb') as fd:
@@ -167,11 +179,11 @@ def handleSyncResponse(iface, response, layerName, variable):
 
   iface.addRasterLayer(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', layerName + '-' + variable)
 
-def handleHarmonyResponse(iface, response, layerName, variable):
+def handleHarmonyResponse(iface, response, layerName, variable, background = True):
   content_type = response.headers['Content-Type']
   message = 'Content-type is: ' + content_type
 
   if content_type == 'application/json; charset=utf-8':
-    handleAsyncResponse(iface, response)
+    handleAsyncResponse(iface, response, background)
   else:
     handleSyncResponse(iface, response, layerName, variable)
