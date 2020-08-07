@@ -7,8 +7,10 @@ import logging
 import tempfile
 import os
 import requests
+import traceback
 
 from qgis.core import Qgis, QgsApplication, QgsProject, QgsProcessingFeedback, QgsProcessingContext, QgsSettings, QgsTaskManager, QgsTask, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
+from qgis.PyQt import QtWidgets
 
 # Session accessible by callers
 session = requests.session()
@@ -119,7 +121,7 @@ def pollResults(task, iface, response, link_count):
   return { 'iface': iface, 'response': response, 'status': status, 'link_count': link_count, 'new_layers': new_layers }
 
 def completed(exception, result=None):
-  """Called when the worker tasks complete
+  """Called when a worker tasks completes
     Arguments:
       exception {Exception} -- if an error occurs
       result {} - the response from  the worker task
@@ -179,7 +181,17 @@ def handleSyncResponse(iface, response, layerName, variable):
 
   iface.addRasterLayer(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', layerName + '-' + variable)
 
+def handleErrorResponse(iface, response):
+  statusCode = response.status_code
+  description = response.json()['description']
+  QtWidgets.QMessageBox.critical(None, str(statusCode), description)
+  iface.mainWindow().statusBar().showMessage(description)
+  
 def handleHarmonyResponse(iface, response, layerName, variable, background = True):
+  if response.status_code > 299:
+    handleErrorResponse(iface, response)
+    return
+
   content_type = response.headers['Content-Type']
   message = 'Content-type is: ' + content_type
 
