@@ -7,8 +7,10 @@ import logging
 import tempfile
 import os
 import requests
+import traceback
 
 from qgis.core import Qgis, QgsApplication, QgsProject, QgsProcessingFeedback, QgsProcessingContext, QgsSettings, QgsTaskManager, QgsTask, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
+from qgis.PyQt import QtWidgets
 
 # Session accessible by callers
 session = requests.session()
@@ -119,16 +121,18 @@ def pollResults(task, iface, response, link_count):
   return { 'iface': iface, 'response': response, 'status': status, 'link_count': link_count, 'new_layers': new_layers }
 
 def completed(exception, result=None):
-  """Called when the worker tasks complete
+  """Called when a worker tasks completes
     Arguments:
       exception {Exception} -- if an error occurs
       result {} - the response from  the worker task
   """
   if exception is None:
+    iface = result['iface']
     if result is None:
-      QgsMessageLog.logMessage('Completed with no error and no result', 'Harmony Plugin')
+      status = 'Completed with no error and no result'
+      QgsMessageLog.logMessage(status, 'Harmony Plugin')
+      iface.mainWindow().statusBar().showMessage(status)
     else:
-      iface = result['iface']
       status = result['status']
       link_count = result['link_count']
       new_layers = result['new_layers']
@@ -144,14 +148,14 @@ def completed(exception, result=None):
         QgsApplication.taskManager().addTask(globals()['task'])
       else:
         status = "Download complete - {} new layers created".format(link_count)
-        QgsMessageLog.logMessage(status, 'Harmony Plugin')
         iface.mainWindow().statusBar().showMessage(status)
   else:
     QgsMessageLog.logMessage("Exception: {}".format(exception), 'Harmony Plugin')
-    raise exception
+    iface.messageBar().pushMessage("Error", 'Error while processing downloads', level=Qgis.Critical, duration=0)
 
 def handleAsyncResponse(iface, response, background):
   iface.mainWindow().statusBar().showMessage(u'Downloading Harmony results')
+  # background download tasks when not running tests
   if background:
     globals()['task'] = QgsTask.fromFunction('Worker', pollResults, on_finished=completed, iface=iface, response=response, link_count=0)
     QgsApplication.taskManager().addTask(globals()['task'])
@@ -171,6 +175,7 @@ def handleAsyncResponse(iface, response, background):
         layer = iface.addRasterLayer(fileName, layerName)
         if not layer or not layer.isValid():
           QgsMessageLog.logMessage("Failed to create layer {}".format(layerName), 'Harmony Plugin')
+          iface.messageBar().pushMessage("Error", "Failed to create layer {}".format(layerName), level=Qgis.Critical, duration=0)
 
 def handleSyncResponse(iface, response, layerName, variable):
   with open(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', 'wb') as fd:
@@ -179,7 +184,16 @@ def handleSyncResponse(iface, response, layerName, variable):
 
   iface.addRasterLayer(tempfile.gettempdir() + os.path.sep + 'harmony_output_image.tif', layerName + '-' + variable)
 
+def handleErrorResponse(iface, response):
+  statusCode = response.status_code
+  description = response.json()['description']
+  iface.messageBar().pushMessage("", description, level=Qgis.Critical, duration=0)
+  
 def handleHarmonyResponse(iface, response, layerName, variable, background = True):
+  if response.status_code > 299:
+    handleErrorResponse(iface, response)
+    return
+
   content_type = response.headers['Content-Type']
   message = 'Content-type is: ' + content_type
 

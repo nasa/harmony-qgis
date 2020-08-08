@@ -42,3 +42,26 @@ class HarmonyQGISDialog(QtWidgets.QDialog, FORM_CLASS):
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+
+    # validate the collection, version, and variable fields 
+    def validateInput(self):
+        collectionId = self.collectionField.text()
+        if collectionId == None or collectionId == '':
+            QtWidgets.QMessageBox.information(None, "Error!", "The collection field is required" )
+            return False
+        version = self.versionField.text()
+        if version == None or version == '':
+            QtWidgets.QMessageBox.information(None, "Error!", "The version field is required" )
+            return False
+        variable = self.variableField.text()
+        if variable == None or variable == '':
+            QtWidgets.QMessageBox.information(None, "Error!", "The variable field is required" )
+            return False
+        return True
+    
+    # check to see if the input is valid before closing the dialog
+    def accept(self):
+        validInput = self.validateInput()
+        if validInput:
+            self.done(1)
+
