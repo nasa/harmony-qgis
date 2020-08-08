@@ -31,7 +31,6 @@ import copy
 import json
 import math
 import platform
-import pprint
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -183,7 +182,6 @@ class HarmonyQGIS:
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -239,8 +237,6 @@ class HarmonyQGIS:
                 value = self.dlg.tableWidget.item(row, 1).text()
                 url = url + separator + parameter + "=" + value
             resp = requests.get(url)
-            QgsMessageLog.logMessage(resp, "Harmony Plugin")
-            QgsMessageLog.logMessage("Got response", "Harmony Plugin")
         else:
             layer = QgsProject.instance().mapLayersByName(layerName)[0]
             opts = QgsVectorFileWriter.SaveVectorOptions()
@@ -268,15 +264,7 @@ class HarmonyQGIS:
                 parameter = self.dlg.tableWidget.item(row, 0).text()
                 value = self.dlg.tableWidget.item(row, 1).text()
                 multipart_form_data[parameter] = (None, value)
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint("OK")
-            resp = requests.post(url, files=multipart_form_data, stream=True)
-            # QgsMessageLog.logMessage(resp, "Harmony Plugin")
-            print(dir(resp))
-            print(resp.status_code)
-            print(resp.text)
-            pp.pprint(resp)
-            
+            resp = requests.post(url, files=multipart_form_data, stream=True)           
             tempFileHandle.close()
         handleHarmonyResponse(self.iface, resp, layerName, variable, background)
 
