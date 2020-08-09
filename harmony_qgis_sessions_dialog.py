@@ -28,7 +28,6 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 class HarmonyQGISSessionsDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
-        QgsMessageLog.logMessage("Building sessions dialog", "Harmony Plugin")
         super(HarmonyQGISSessionsDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
         # After self.setupUi() you can access any designer object by doing

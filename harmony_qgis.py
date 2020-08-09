@@ -21,7 +21,7 @@
 """
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QInputDialog, QLineEdit
+from qgis.PyQt.QtWidgets import QAction, QTableWidgetItem, QInputDialog, QLineEdit, QMessageBox
 from qgis.core import Qgis, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
 # from qgis.utils import iface
 from zipfile import ZipFile
@@ -36,7 +36,7 @@ import platform
 from .resources import *
 # Import the code for the dialog
 from .harmony_qgis_dialog import HarmonyQGISDialog
-from .harmony_qgis_sessions import newSessionTag, switchSession, manageSessions, populateSessionsCombo, saveSession, startDeleteSession
+from .harmony_qgis_sessions import newSessionTag, switchSession, manageSessions, populateSessionsCombo, saveSession, startDeleteSession, updateSessionsDlgButtons, exportSessions, importSessions, isCurrentSessionUpdated, setCurrentSessionUpdated
 from .HarmonyEventFilter import HarmonyEventFilter
 import os.path
 from .harmony_response import handleHarmonyResponse
@@ -196,17 +196,29 @@ class HarmonyQGIS:
         self.dlg.tableWidget.insertRow(rowPosition)
         self.dlg.tableWidget.setItem(rowPosition, 0, QTableWidgetItem(""))
         self.dlg.tableWidget.setItem(rowPosition, 1, QTableWidgetItem(""))
+        setCurrentSessionUpdated(True)
 
     def deleteSearchParameter(self):
         """Remove a search parameter from the table"""
         self.dlg.tableWidget.removeRow(self.dlg.tableWidget.currentRow())
+        setCurrentSessionUpdated(True)
 
     def setupGui(self):
         self.dlg = HarmonyQGISDialog()
+        # sessions management dialog
         self.sessionsDlg = HarmonyQGISSessionsDialog()
+        self.sessionsDlg.listWidget.clicked.connect(lambda:updateSessionsDlgButtons(self.dlg, self.sessionsDlg))
         self.sessionsDlg.deletebutton.clicked.connect(lambda:startDeleteSession(self.dlg, self.sessionsDlg))
+        self.sessionsDlg.exportButton.clicked.connect(lambda:exportSessions(self.sessionsDlg))
+        self.sessionsDlg.importButton.clicked.connect(lambda:importSessions(self.dlg, self.sessionsDlg))
+        # main dialog
         self.dlg.sessionsButton.clicked.connect(lambda:manageSessions(self))
         self.dlg.sessionCombo.currentIndexChanged.connect(lambda:switchSession(self.dlg))
+        self.dlg.collectionField.textChanged.connect(lambda:setCurrentSessionUpdated(True))
+        self.dlg.versionField.textChanged.connect(lambda:setCurrentSessionUpdated(True))
+        self.dlg.variableField.textChanged.connect(lambda:setCurrentSessionUpdated(True))
+        self.dlg.comboBox.currentIndexChanged.connect(lambda:setCurrentSessionUpdated(True))
+
         # add/remove additional query parameters
         self.dlg.addButton.clicked.connect(self.addSearchParameter)
         self.dlg.removeRowButton.clicked.connect(self.deleteSearchParameter)
@@ -225,7 +237,6 @@ class HarmonyQGIS:
         url = harmonyUrl + "/" + path
         resp = None
         layerName = str(self.dlg.comboBox.currentText())
-        QgsMessageLog.logMessage('Using layer ' + layerName, 'Harmony Plugin')
         if layerName == "<None>":
             # use a GET request
             rowCount = self.dlg.tableWidget.rowCount()
@@ -252,8 +263,6 @@ class HarmonyQGIS:
             opts.driverName = 'GeoJson'
             tempFile = tempfile.gettempdir() + os.path.sep + 'qgis.json'
             QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
-            
-            QgsMessageLog.logMessage("URL:" + url, "Harmony Plugin")
 
             tempFileHandle = open(tempFile, 'r')
             contents = tempFileHandle.read()
@@ -351,8 +360,11 @@ class HarmonyQGIS:
         # set the table header
         self.dlg.tableWidget.setHorizontalHeaderLabels('Parameter;Value'.split(';'))
 
-        # DEBUG
-        # settings.setValue("saved_sessions", [])
+        # indicate that the session has not been changed
+        setCurrentSessionUpdated(False)
+
+        # put a message in the status bar to let the user know we are querying Harmony
+        self.iface.mainWindow().statusBar().showMessage("Querying Harmony...")
 
         # show the dialog
         self.dlg.show()
@@ -360,14 +372,17 @@ class HarmonyQGIS:
         result = self.dlg.exec_()
         # See if OK was pressed
         if result:
-            # ask to save settings
-            sessionName = str(self.dlg.sessionCombo.currentText())
-            if sessionName == newSessionTag:
-                newName, ok = QInputDialog(self.dlg).getText(self.dlg, "Save session?", "Session name:", QLineEdit.Normal)
-                if ok and newName:
-                    saveSession(self.dlg, newName)
-            else:
-                saveSession(self.dlg, sessionName)
+            if isCurrentSessionUpdated():
+                # ask to save settings
+                sessionName = str(self.dlg.sessionCombo.currentText())
+                if sessionName == newSessionTag:
+                    newName, ok = QInputDialog(self.dlg).getText(self.dlg, "Save session?", "Session name:", QLineEdit.Normal)
+                    if ok and newName:
+                        saveSession(self.dlg, newName)
+                else:
+                    reply = QMessageBox.question(self.iface.mainWindow(), 'Save session?', 'Save session?', QMessageBox.Yes, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        saveSession(self.dlg, sessionName)
 
             # save the download directory in the UI to settings
             settings.setValue("harmony_qgis/download_dir", self.dlg.harmonyDownloadDirEdit.text())

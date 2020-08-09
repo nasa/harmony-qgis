@@ -20,7 +20,7 @@ docker cp ~/.netrc qgis:/root
 docker exec -it qgis sh -c "qgis_setup.sh harmony-qgis"
 
 # run the tests
-for test in  test.test_qgis_environment test.test_harmony_qgis test.test_harmony_qgis_dialog test.test_resources test.test_init
+for test in  test.test_qgis_environment test.test_harmony_qgis test.test_harmony_qgis_dialog test.test_resources test.test_init test.test_sessions
 do
   docker exec -it qgis sh -c "cd /tests_directory/harmony-qgis && PYTHONPATH=/tests_directory/harmony-qgis qgis_testrunner.sh ${test}"
   if [ $? -ne 0 ]

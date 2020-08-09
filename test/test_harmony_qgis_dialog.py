@@ -35,6 +35,17 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
     def test_dialog_ok(self):
         """Test we can click OK."""
+        field = self.dialog.collectionField
+        field.insert("Collection123")
+        field = self.dialog.versionField
+        field.insert("1.0.0")
+        field = self.dialog.variableField
+        field.insert("red_var")
+
+        comboBox = self.dialog.comboBox
+        comboBox.clear()
+        comboBox.addItem("MyPointLayer")
+        comboBox.setCurrentIndex(0)
 
         button = self.dialog.button_box.button(QtWidgets.QDialogButtonBox.Ok)
         button.click()
