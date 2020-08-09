@@ -223,7 +223,7 @@ class HarmonyQGIS:
 
         path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
         url = harmonyUrl + "/" + path
-
+        resp = None
         layerName = str(self.dlg.comboBox.currentText())
         QgsMessageLog.logMessage('Using layer ' + layerName, 'Harmony Plugin')
         if layerName == "<None>":
@@ -236,7 +236,16 @@ class HarmonyQGIS:
                 parameter = self.dlg.tableWidget.item(row, 0).text()
                 value = self.dlg.tableWidget.item(row, 1).text()
                 url = url + separator + parameter + "=" + value
-            resp = requests.get(url)
+            try:
+                resp = requests.get(url, timeout=30)
+            except requests.exceptions.Timeout:
+                msg = "Connetion to {} timed out".format(url)
+                self.iface.messageBar().pushMessage("Error", msg, level=Qgis.Critical, duration=0)
+                return
+            except Exception as e:
+                msg = "Error accessing {}".format(url)
+                self.iface.messageBar().pushMessage("Error", msg, level=Qgis.Critical, duration=0)
+                return
         else:
             layer = QgsProject.instance().mapLayersByName(layerName)[0]
             opts = QgsVectorFileWriter.SaveVectorOptions()
@@ -264,8 +273,18 @@ class HarmonyQGIS:
                 parameter = self.dlg.tableWidget.item(row, 0).text()
                 value = self.dlg.tableWidget.item(row, 1).text()
                 multipart_form_data[parameter] = (None, value)
-            resp = requests.post(url, files=multipart_form_data, stream=True)           
-            tempFileHandle.close()
+            try:
+                resp = requests.post(url, files=multipart_form_data, stream=True, timeout=30)
+            except requests.exceptions.Timeout:
+                msg = "Connetion to {} timed out".format(url)
+                self.iface.messageBar().pushMessage("Error", msg, level=Qgis.Critical, duration=0)
+                return
+            except Exception as e:
+                msg = "Error accessing {}".format(url)
+                self.iface.messageBar().pushMessage("Error", msg, level=Qgis.Critical, duration=0)
+                return
+            finally:
+                tempFileHandle.close()
         handleHarmonyResponse(self.iface, resp, layerName, variable, background)
 
     def run(self):
