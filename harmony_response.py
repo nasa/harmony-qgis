@@ -186,6 +186,9 @@ def handleSyncResponse(iface, response, layerName, variable):
 def handleErrorResponse(iface, response):
   statusCode = response.status_code
   description = response.json()['description']
+  # handle special case
+  if description == "Error: Cannot set property 'user' of undefined":
+    description = 'Invalid Harmony API version'
   iface.messageBar().pushMessage("", description, level=Qgis.Critical, duration=0)
   
 def handleHarmonyResponse(iface, response, layerName, variable, background = True):
