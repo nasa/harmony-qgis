@@ -32,7 +32,7 @@ Here you can configure a Harmony query by entering parameters in the relevant fi
 As labeled in figure 2, these fields are
 
 1. `collection` (required) Used to indicate the Common Metadata Repository (CMR) collection id to use
-2. `version` (required) Used to indicate which version of the collection to use
+2. `version` (required) Used to indicate which version of the Harmony API to use
 3. `variable` (required) Used to indicate which variable to use
 4. `download directory` Where to store the images downloaded from Harmony
 5. `harmony url` The URL of the Harmony service to use (for accessing various environments such as UAT or Prod)

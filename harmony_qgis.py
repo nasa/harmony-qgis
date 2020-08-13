@@ -226,7 +226,7 @@ class HarmonyQGIS:
     def getResults(self, background=True):
         collectionId = str(self.dlg.collectionField.text())
 
-        version = str(self.dlg.versionField.text())
+        version = str(self.dlg.versionField.text()) or "1.0.0"
         variable = str(self.dlg.variableField.text())
 
         harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
@@ -317,7 +317,9 @@ class HarmonyQGIS:
         populateSessionsCombo(self.dlg)
         
         # Fetch the currently loaded layers
-        layers = QgsProject.instance().layerTreeRoot().children()
+        # layers = QgsProject.instance().layerTreeRoot().children()
+        layers = [l for l in QgsProject.instance().mapLayers().values() if l.type() == QgsVectorLayer.VectorLayer]
+       
         layerNames = [layer.name() for layer in layers]
         layerNames.insert(0, "<None>")
 
@@ -328,8 +330,9 @@ class HarmonyQGIS:
 
         # use the active layer as the default
         layer = self.iface.activeLayer()
-        if layer:
-            self.dlg.comboBox.setCurrentIndex(layerNames.index(layer.name()))
+        if layer and layer.name() in layerNames:
+            index = layerNames.index(layer.name())
+            elf.dlg.comboBox.setCurrentIndex(index)
 
         # set the download directory to the saved value or the system temporary directory
         tempDir = "/tmp"

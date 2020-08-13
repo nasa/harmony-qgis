@@ -125,7 +125,7 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string>Set the collection</string>
+    <string>Set the collection (CMR collection id)</string>
    </property>
    <property name="echoMode">
     <enum>QLineEdit::Normal</enum>
@@ -182,14 +182,14 @@
   <widget class="QLabel" name="label_10">
    <property name="geometry">
     <rect>
-     <x>110</x>
+     <x>30</x>
      <y>230</y>
-     <width>51</width>
+     <width>131</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Version</string>
+    <string>Harmony API Version</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="versionField">
@@ -202,10 +202,13 @@
     </rect>
    </property>
    <property name="toolTip">
-    <string>Set the version</string>
+    <string>Set the  Harmony API version</string>
    </property>
    <property name="echoMode">
     <enum>QLineEdit::Normal</enum>
+   </property>
+   <property name="placeholderText">
+    <string>1.0.0</string>
    </property>
    <property name="clearButtonEnabled">
     <bool>true</bool>
