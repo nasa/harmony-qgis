@@ -332,7 +332,7 @@ class HarmonyQGIS:
         layer = self.iface.activeLayer()
         if layer and layer.name() in layerNames:
             index = layerNames.index(layer.name())
-            elf.dlg.comboBox.setCurrentIndex(index)
+            self.dlg.comboBox.setCurrentIndex(index)
 
         # set the download directory to the saved value or the system temporary directory
         tempDir = "/tmp"
