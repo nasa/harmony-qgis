@@ -5,15 +5,15 @@
 [general]
 name=Harmony
 qgisMinimumVersion=3.0
-description=Access the Harmony service broker to process and download Earth science data
+description=This plugin allows the user to select areas on the map and upload them as queries (along with other parameters) to the Harmony Earth science data/service broker.
 version=0.1
 author=James Norton
 email=james@element84.com
 
-about=Access Earth science data through the Harmony data/service broker
+about=Harmony plugin v0.1
 
-tracker=http://bugs
-repository=http://repo
+tracker=https://bugs.earthdata.nasa.gov/
+repository=https://git.earthdata.nasa.gov/scm/hqgis/harmony-qgis.git
 # End of mandatory metadata
 
 # Recommended items:
@@ -23,7 +23,7 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=harmony python
+tags=harmony,python
 
 homepage=http://homepage
 category=Plugins

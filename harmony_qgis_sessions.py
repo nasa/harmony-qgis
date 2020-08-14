@@ -53,7 +53,7 @@ def finishDeleteSession(dlg):
 # when a session is imported the layer it refers to may not exist - if so replace it with 
 # <None>
 def replaceMissingLayers(session):
-  layers = QgsProject.instance().layerTreeRoot().children()
+  layers = [l for l in QgsProject.instance().mapLayers().values() if l.type() == QgsVectorLayer.VectorLayer]
   layerNames = [layer.name() for layer in layers]
   if not session[1]['layer'] in layerNames:
     session[1]['layer'] = "<None>"
