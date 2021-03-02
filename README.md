@@ -1,6 +1,6 @@
 # Harmony QGIS
 
-This plugin allows the user to select areas on the map and upload them as queries (along with other parameters) to the [Harmony](ssh://git@git.earthdata.nasa.gov:7999/hqgis/harmony-qgis.git) Earth science data/service broker, showing the results on the map.
+This plugin allows the user to select areas on the map and upload them as queries (along with other parameters) to the [Harmony](https://harmony.earthdata.nasa.gov) Earth science data/service broker, showing the results on the map.
 
 ## Requirements
 QGIS version 3.12 or higher
@@ -8,7 +8,7 @@ QGIS version 3.12 or higher
 ## Installation
 1. Clone this repository under the plugins directory for QGIS (/Users/USER_NAME/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins on a Mac)
 ```
-$ git clone https://git.earthdata.nasa.gov/scm/hqgis/harmony-qgis.git
+$ git clone https://github.com/nasa/harmony-qgis.git
 ```
 3. Restart QGIS
 4. Select Plugins->Manage and Install Plugins from the menu
@@ -27,7 +27,7 @@ The basic workflow begins as labeled in red numbers on figure 1:
 </figure>
 
 This will open the main dialog shown in figure 2.
-Here you can configure a Harmony query by entering parameters in the relevant fields. At a minimum you must fill in the `Collection`, `Version`, and `Variable` fields in order to execute a query. 
+Here you can configure a Harmony query by entering parameters in the relevant fields. At a minimum you must fill in the `Collection`, `Version`, and `Variable` fields in order to execute a query.
 
 As labeled in figure 2, these fields are
 
@@ -69,6 +69,6 @@ The user can click on the session management button, (9) in figure 2, to bring u
 </figure>
 
 All the saved sessions are shown in the list widget (1). Selecting one ore more (shift select) saved sessions will enable the `Delete` button (2). As the name suggests, this will delete the selected sessions. Selecting sessions will also enable the `Export` button (4)
-which can be used to write out the data for one or more sessions as a JSON file. This can be shared with other users to allow them to reproduce the Harmony queries defined by sessions. Conversely, the `Import` button (3) can be used to load sessions from an exported file. 
+which can be used to write out the data for one or more sessions as a JSON file. This can be shared with other users to allow them to reproduce the Harmony queries defined by sessions. Conversely, the `Import` button (3) can be used to load sessions from an exported file.
 
 **Note** the selected layer (if any) is saved as part of the session data. If an imported session contains a layer name that does not exist in the current project, this information is discarded.

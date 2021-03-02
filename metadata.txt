@@ -13,7 +13,7 @@ email=james@element84.com
 about=Harmony plugin v0.1
 
 tracker=https://bugs.earthdata.nasa.gov/
-repository=https://git.earthdata.nasa.gov/scm/hqgis/harmony-qgis.git
+repository=https://github.com/nasa/harmony-qgis.git
 # End of mandatory metadata
 
 # Recommended items:
