@@ -43,6 +43,7 @@ from .harmony_response import handleHarmonyResponse
 from .harmony_qgis_sessions_dialog import HarmonyQGISSessionsDialog
 from .rewind import rewind
 
+
 class HarmonyQGIS:
     """QGIS Plugin Implementation."""
 
@@ -94,18 +95,17 @@ class HarmonyQGIS:
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('HarmonyQGIS', message)
 
-
     def add_action(
-        self,
-        icon_path,
-        text,
-        callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
-        status_tip=None,
-        whats_this=None,
-        parent=None):
+            self,
+            icon_path,
+            text,
+            callback,
+            enabled_flag=True,
+            add_to_menu=True,
+            add_to_toolbar=True,
+            status_tip=None,
+            whats_this=None,
+            parent=None):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -207,17 +207,26 @@ class HarmonyQGIS:
         self.dlg = HarmonyQGISDialog()
         # sessions management dialog
         self.sessionsDlg = HarmonyQGISSessionsDialog()
-        self.sessionsDlg.listWidget.clicked.connect(lambda:updateSessionsDlgButtons(self.dlg, self.sessionsDlg))
-        self.sessionsDlg.deletebutton.clicked.connect(lambda:startDeleteSession(self.dlg, self.sessionsDlg))
-        self.sessionsDlg.exportButton.clicked.connect(lambda:exportSessions(self.sessionsDlg))
-        self.sessionsDlg.importButton.clicked.connect(lambda:importSessions(self.dlg, self.sessionsDlg))
+        self.sessionsDlg.listWidget.clicked.connect(
+            lambda: updateSessionsDlgButtons(self.dlg, self.sessionsDlg))
+        self.sessionsDlg.deletebutton.clicked.connect(
+            lambda: startDeleteSession(self.dlg, self.sessionsDlg))
+        self.sessionsDlg.exportButton.clicked.connect(
+            lambda: exportSessions(self.sessionsDlg))
+        self.sessionsDlg.importButton.clicked.connect(
+            lambda: importSessions(self.dlg, self.sessionsDlg))
         # main dialog
-        self.dlg.sessionsButton.clicked.connect(lambda:manageSessions(self))
-        self.dlg.sessionCombo.currentIndexChanged.connect(lambda:switchSession(self.dlg))
-        self.dlg.collectionField.textChanged.connect(lambda:setCurrentSessionUpdated(True))
-        self.dlg.versionField.textChanged.connect(lambda:setCurrentSessionUpdated(True))
-        self.dlg.variableField.textChanged.connect(lambda:setCurrentSessionUpdated(True))
-        self.dlg.comboBox.currentIndexChanged.connect(lambda:setCurrentSessionUpdated(True))
+        self.dlg.sessionsButton.clicked.connect(lambda: manageSessions(self))
+        self.dlg.sessionCombo.currentIndexChanged.connect(
+            lambda: switchSession(self.dlg))
+        self.dlg.collectionField.textChanged.connect(
+            lambda: setCurrentSessionUpdated(True))
+        self.dlg.versionField.textChanged.connect(
+            lambda: setCurrentSessionUpdated(True))
+        self.dlg.variableField.textChanged.connect(
+            lambda: setCurrentSessionUpdated(True))
+        self.dlg.comboBox.currentIndexChanged.connect(
+            lambda: setCurrentSessionUpdated(True))
 
         # add/remove additional query parameters
         self.dlg.addButton.clicked.connect(self.addSearchParameter)
@@ -233,7 +242,8 @@ class HarmonyQGIS:
         if harmonyUrl == None or harmonyUrl == "":
             harmonyUrl = "https://harmony.uat.earthdata.nasa.gov"
 
-        path = collectionId + "/" + "ogc-api-coverages/" + version + "/collections/" + variable + "/coverage/rangeset"
+        path = collectionId + "/" + "ogc-api-coverages/" + version + \
+            "/collections/" + variable + "/coverage/rangeset"
         url = harmonyUrl + "/" + path
         resp = None
         layerName = str(self.dlg.comboBox.currentText())
@@ -262,7 +272,8 @@ class HarmonyQGIS:
             opts = QgsVectorFileWriter.SaveVectorOptions()
             opts.driverName = 'GeoJson'
             tempFile = tempfile.gettempdir() + os.path.sep + 'qgis.json'
-            QgsVectorFileWriter.writeAsVectorFormatV2(layer, tempFile, QgsCoordinateTransformContext(), opts)
+            QgsVectorFileWriter.writeAsVectorFormatV2(
+                layer, tempFile, QgsCoordinateTransformContext(), opts)
 
             tempFileHandle = open(tempFile, 'r')
             contents = tempFileHandle.read()
@@ -283,7 +294,8 @@ class HarmonyQGIS:
                 value = self.dlg.tableWidget.item(row, 1).text()
                 multipart_form_data[parameter] = (None, value)
             try:
-                resp = requests.post(url, files=multipart_form_data, stream=True, timeout=30)
+                resp = requests.post(
+                    url, files=multipart_form_data, stream=True, timeout=30)
             except requests.exceptions.Timeout:
                 msg = "Connetion to {} timed out".format(url)
                 self.iface.messageBar().pushMessage("Error", msg, level=Qgis.Critical, duration=0)
@@ -294,7 +306,8 @@ class HarmonyQGIS:
                 return
             finally:
                 tempFileHandle.close()
-        handleHarmonyResponse(self.iface, resp, layerName, variable, background)
+        handleHarmonyResponse(self.iface, resp, layerName,
+                              variable, background)
 
     def run(self):
         """Run method that performs all the real work"""
@@ -304,7 +317,7 @@ class HarmonyQGIS:
         if self.first_start == True:
             self.first_start = False
             self.setupGui()
-        
+
         self.eventFilter = HarmonyEventFilter(self)
         self.dlg.installEventFilter(self.eventFilter)
 
@@ -313,13 +326,14 @@ class HarmonyQGIS:
 
         # Handle sessions
         # self.dlg.sessionAddButton.clicked.connect(lambda:addSession(self.dlg))
-        
+
         populateSessionsCombo(self.dlg)
-        
+
         # Fetch the currently loaded layers
         # layers = QgsProject.instance().layerTreeRoot().children()
-        layers = [l for l in QgsProject.instance().mapLayers().values() if l.type() == QgsVectorLayer.VectorLayer]
-       
+        layers = [l for l in QgsProject.instance().mapLayers(
+        ).values() if l.type() == QgsVectorLayer.VectorLayer]
+
         layerNames = [layer.name() for layer in layers]
         layerNames.insert(0, "<None>")
 
@@ -361,7 +375,8 @@ class HarmonyQGIS:
         self.dlg.tableWidget.setRowCount(0)
 
         # set the table header
-        self.dlg.tableWidget.setHorizontalHeaderLabels('Parameter;Value'.split(';'))
+        self.dlg.tableWidget.setHorizontalHeaderLabels(
+            'Parameter;Value'.split(';'))
 
         # indicate that the session has not been changed
         setCurrentSessionUpdated(False)
@@ -379,15 +394,18 @@ class HarmonyQGIS:
                 # ask to save settings
                 sessionName = str(self.dlg.sessionCombo.currentText())
                 if sessionName == newSessionTag:
-                    newName, ok = QInputDialog(self.dlg).getText(self.dlg, "Save session?", "Session name:", QLineEdit.Normal)
+                    newName, ok = QInputDialog(self.dlg).getText(
+                        self.dlg, "Save session?", "Session name:", QLineEdit.Normal)
                     if ok and newName:
                         saveSession(self.dlg, newName)
                 else:
-                    reply = QMessageBox.question(self.iface.mainWindow(), 'Save session?', 'Save session?', QMessageBox.Yes, QMessageBox.No)
+                    reply = QMessageBox.question(self.iface.mainWindow(
+                    ), 'Save session?', 'Save session?', QMessageBox.Yes, QMessageBox.No)
                     if reply == QMessageBox.Yes:
                         saveSession(self.dlg, sessionName)
 
             # save the download directory in the UI to settings
-            settings.setValue("harmony_qgis/download_dir", self.dlg.harmonyDownloadDirEdit.text())
+            settings.setValue("harmony_qgis/download_dir",
+                              self.dlg.harmonyDownloadDirEdit.text())
 
-            self.getResults()    
+            self.getResults()

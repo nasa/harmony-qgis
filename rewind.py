@@ -18,12 +18,14 @@ import math
 
 RADIUS = 6378137
 
+
 def rewind(geojson, rfc7946=True):
     gj = copy.deepcopy(geojson)
     if isinstance(gj, str):
         return json.dumps(_rewind(json.loads(gj), rfc7946))
     else:
         return _rewind(gj, rfc7946)
+
 
 def _rewind(gj, rfc7946):
     if gj['type'] == 'FeatureCollection':
@@ -37,6 +39,7 @@ def _rewind(gj, rfc7946):
         return correct(gj, rfc7946)
     return gj
 
+
 def correct(feature, rfc7946):
     if feature['type'] == 'Polygon':
         feature['coordinates'] = correctRings(feature['coordinates'], rfc7946)
@@ -45,6 +48,7 @@ def correct(feature, rfc7946):
             map(lambda obj: correctRings(obj, rfc7946), feature['coordinates'])
         )
     return feature
+
 
 def correctRings(rings, rfc7946):
     # change from rfc7946: True/False to clockwise: True/False here
@@ -57,13 +61,16 @@ def correctRings(rings, rfc7946):
         rings[i] = wind(rings[i], not(clockwise))
     return rings
 
+
 def wind(ring, clockwise):
     if is_clockwise(ring) == clockwise:
         return ring
     return ring[::-1]
 
+
 def is_clockwise(ring):
     return ringArea(ring) >= 0
+
 
 def ringArea(coords):
     area = 0
@@ -86,11 +93,12 @@ def ringArea(coords):
             p1 = coords[lowerIndex]
             p2 = coords[middleIndex]
             p3 = coords[upperIndex]
-            area = area + ( rad(p3[0]) - rad(p1[0]) ) * math.sin(rad(p2[1]))
+            area = area + (rad(p3[0]) - rad(p1[0])) * math.sin(rad(p2[1]))
 
         area = area * RADIUS * RADIUS / 2
 
     return area
+
 
 def rad(coord):
     return coord * math.pi / 180

@@ -24,11 +24,13 @@ from harmony_response import handleHarmonyResponse
 from .utilities import get_qgis_app
 from qgis.testing.mocked import get_iface
 
+
 def hasLayer(layers, name):
-  for layer in layers:
-    if layer.name() == name:
-      return True 
-  return False
+    for layer in layers:
+        if layer.name() == name:
+            return True
+    return False
+
 
 class HarmonyQGISTest(unittest.TestCase):
     """Test plugin works."""
@@ -43,9 +45,9 @@ class HarmonyQGISTest(unittest.TestCase):
         vl = QgsVectorLayer("Point", "MyPointLayer", "memory")
         pr = vl.dataProvider()
         f = QgsFeature()
-        f.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(-74,51)))
+        f.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(-74, 51)))
         pr.addFeature(f)
-        vl.updateExtents() 
+        vl.updateExtents()
         QgsProject.instance().addMapLayer(vl)
 
         layerDict = QgsProject.instance().mapLayers()
@@ -58,9 +60,9 @@ class HarmonyQGISTest(unittest.TestCase):
 
     def test_plugin(self):
         """Test we can retrieve layers from Harmony with the plugin (this is a SLOW test)."""
-  
+
         self.assertIsNotNone(self.dialog)
-        
+
         # fill in the request fields and choose our layer
         collectionField = self.dialog.collectionField
         collectionField.insert("C1233800302-EEDTEST")
@@ -74,15 +76,16 @@ class HarmonyQGISTest(unittest.TestCase):
         comboBox.setCurrentIndex(0)
 
         # run the request
-        self.harmony_qgis.getResults(background = False)
+        self.harmony_qgis.getResults(background=False)
 
         # check to see if the layers were created
         layerDict = QgsProject.instance().mapLayers()
         self.assertEqual(len(layerDict), self.layerCount + 20)
-        self.assertTrue(hasLayer(layerDict.values(), '001_00_7f00ff_global_red_var'))
+        self.assertTrue(hasLayer(layerDict.values(),
+                        '001_00_7f00ff_global_red_var'))
+
 
 def run_all():
     suite = unittest.makeSuite(HarmonyQGISTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
-
