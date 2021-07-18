@@ -91,7 +91,6 @@ class QgisInterface(QObject):
         .. note: The addLayer method was deprecated in QGIS 1.8 so you should
                  not need this method much.
         """
-        pass
 
     @pyqtSlot()
     def removeAllLayers(self):
@@ -108,19 +107,15 @@ class QgisInterface(QObject):
 
     def zoomFull(self):
         """Zoom to the map full extent."""
-        pass
 
     def zoomToPrevious(self):
         """Zoom to previous view extent."""
-        pass
 
     def zoomToNext(self):
         """Zoom to next view extent."""
-        pass
 
     def zoomToActiveLayer(self):
         """Zoom to extent of active layer."""
-        pass
 
     def addVectorLayer(self, path, base_name, provider_key):
         """Add a vector layer.
@@ -134,7 +129,6 @@ class QgisInterface(QObject):
         :param provider_key: Provider key e.g. 'ogr'
         :type provider_key: str
         """
-        pass
 
     def addRasterLayer(self, path, base_name):
         """Add a raster layer given a raster layer file name
@@ -145,7 +139,6 @@ class QgisInterface(QObject):
         :param base_name: Base name for layer.
         :type base_name: str
         """
-        pass
 
     @staticmethod
     def activeLayer():
@@ -161,7 +154,6 @@ class QgisInterface(QObject):
         :param action: Action to add to the toolbar.
         :type action: QAction
         """
-        pass
 
     def removeToolBarIcon(self, action):
         """Remove an action (icon) from the plugin toolbar.
@@ -169,7 +161,6 @@ class QgisInterface(QObject):
         :param action: Action to add to the toolbar.
         :type action: QAction
         """
-        pass
 
     def addToolBar(self, name):
         """Add toolbar with specified name.
@@ -177,7 +168,6 @@ class QgisInterface(QObject):
         :param name: Name for the toolbar.
         :type name: str
         """
-        pass
 
     def mapCanvas(self):
         """Return a pointer to the map canvas."""
@@ -188,7 +178,6 @@ class QgisInterface(QObject):
 
         In case of QGIS it returns an instance of QgisApp.
         """
-        pass
 
     def addDockWidget(self, area, dock_widget):
         """Add a dock widget to the main window.
@@ -199,7 +188,6 @@ class QgisInterface(QObject):
         :param dock_widget: A dock widget to add to the UI.
         :type dock_widget: QDockWidget
         """
-        pass
 
     def legendInterface(self):
         """Get the legend."""
