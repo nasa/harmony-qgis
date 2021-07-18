@@ -23,8 +23,7 @@ def rewind(geojson, rfc7946=True):
     gj = copy.deepcopy(geojson)
     if isinstance(gj, str):
         return json.dumps(_rewind(json.loads(gj), rfc7946))
-    else:
-        return _rewind(gj, rfc7946)
+    return _rewind(gj, rfc7946)
 
 
 def _rewind(gj, rfc7946):
