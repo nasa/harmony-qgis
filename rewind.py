@@ -54,10 +54,10 @@ def correctRings(rings, rfc7946):
     # RFC 7946 ordering determines how we deal with an entire polygon
     # but at this point we are switching to deal with individual rings
     # (which in isolation are just clockwise or anti-clockwise)
-    clockwise = not(bool(rfc7946))
+    clockwise = not bool(rfc7946)
     rings[0] = wind(rings[0], clockwise)
     for i in range(1, len(rings)):
-        rings[i] = wind(rings[i], not(clockwise))
+        rings[i] = wind(rings[i], not clockwise)
     return rings
 
 
