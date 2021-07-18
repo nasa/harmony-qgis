@@ -133,7 +133,7 @@ def exportSessions(dlg, fileName=None):
 
     if len(exportedSessions) > 0:
         jsonStr = json.dumps(exportedSessions, sort_keys=True, indent=4)
-        if fileName == None:
+        if fileName is None:
             fileName, _filter = QFileDialog.getSaveFileName(
                 dlg, 'Save file', '', "Json files (*.json)")
 

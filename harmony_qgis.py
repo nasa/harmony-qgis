@@ -240,7 +240,7 @@ class HarmonyQGIS:
         variable = str(self.dlg.variableField.text())
 
         harmonyUrl = self.dlg.harmonyUrlLineEdit.text()
-        if harmonyUrl == None or harmonyUrl == "":
+        if harmonyUrl is None or harmonyUrl == "":
             harmonyUrl = "https://harmony.uat.earthdata.nasa.gov"
 
         path = collectionId + "/" + "ogc-api-coverages/" + version + \
@@ -315,7 +315,7 @@ class HarmonyQGIS:
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
+        if self.first_start is True:
             self.first_start = False
             self.setupGui()
 
