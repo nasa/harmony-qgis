@@ -62,7 +62,6 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
     def test_collection_field(self):
         """Test we can set the collection field."""
-
         field = self.dialog.collectionField
         field.insert("Collection123")
 
@@ -70,7 +69,6 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
     def test_version_field(self):
         """Test we can set the version field."""
-
         field = self.dialog.versionField
         field.insert("1.0.0")
 
@@ -78,7 +76,6 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
     def test_variable_field(self):
         """Test we can set the variable field."""
-
         field = self.dialog.variableField
         field.insert("red_var")
 
@@ -86,7 +83,6 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
     def test_combobox(self):
         """Test we can set the layer combobox."""
-
         comboBox = self.dialog.comboBox
         comboBox.clear()
         comboBox.addItem("MyPointLayer")

@@ -145,7 +145,6 @@ class HarmonyQGIS:
             added to self.actions list.
         :rtype: QAction
         """
-
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
@@ -172,7 +171,6 @@ class HarmonyQGIS:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
         icon_path = ':/plugins/harmony_qgis/icon.png'
         self.add_action(
             icon_path,
@@ -312,9 +310,6 @@ class HarmonyQGIS:
 
     def run(self):
         """Run method that performs all the real work"""
-
-        # Create the dialog with elements (after translation) and keep reference
-        # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start is True:
             self.first_start = False
             self.setupGui()
