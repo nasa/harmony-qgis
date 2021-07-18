@@ -9,7 +9,7 @@ import os
 import requests
 import traceback
 
-from qgis.core import Qgis, QgsApplication, QgsProject, QgsProcessingFeedback, QgsProcessingContext, QgsSettings, QgsTaskManager, QgsTask, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
+from qgis.core import Qgis, QgsApplication, QgsProcessingFeedback, QgsProcessingContext, QgsTaskManager, QgsTask, QgsProject, QgsSettings, QgsVectorLayer, QgsVectorFileWriter, QgsCoordinateTransformContext, QgsRasterLayer, QgsMessageLog
 from qgis.PyQt import QtWidgets
 
 # Session accessible by callers
