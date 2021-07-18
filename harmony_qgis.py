@@ -81,7 +81,8 @@ class HarmonyQGIS:
         self.dlg = None
 
     # noinspection PyMethodMayBeStatic
-    def tr(self, message):
+    @staticmethod
+    def tr(message):
         """Get the translation for a string using Qt translation API.
 
         We implement this ourselves since we do not inherit QObject.

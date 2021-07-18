@@ -98,7 +98,8 @@ class QgisInterface(QObject):
         """Remove layers from the canvas before they get deleted."""
         self.canvas.setLayerSet([])
 
-    def newProject(self):
+    @staticmethod
+    def newProject():
         """Create new project."""
         # noinspection PyArgumentList
         QgsProject.instance().removeAllMapLayers()
@@ -146,7 +147,8 @@ class QgisInterface(QObject):
         """
         pass
 
-    def activeLayer(self):
+    @staticmethod
+    def activeLayer():
         """Get pointer to the active layer (layer selected in the legend)."""
         # noinspection PyArgumentList
         layers = QgsProject.instance().mapLayers()
