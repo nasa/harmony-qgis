@@ -2,6 +2,7 @@
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
+
 class HarmonyEventFilter(QtCore.QObject):
     def __init__(self, plugin):
         super(HarmonyEventFilter, self).__init__(None)
@@ -10,9 +11,9 @@ class HarmonyEventFilter(QtCore.QObject):
     def eventFilter(self, obj, event):
         if self.plugin.dlg and obj is self.plugin.dlg:
             if event.type() == QtCore.QEvent.KeyPress:
-                if event.key() in (QtCore.Qt.Key_Return, 
-                    QtCore.Qt.Key_Escape, 
-                    QtCore.Qt.Key_Enter,):
+                if event.key() in (QtCore.Qt.Key_Return,
+                                   QtCore.Qt.Key_Escape,
+                                   QtCore.Qt.Key_Enter,):
                     return True
             if event.type() == QtCore.QEvent.Close:
                 event.ignore()

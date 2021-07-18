@@ -54,7 +54,8 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
     def test_dialog_cancel(self):
         """Test we can click cancel."""
-        button = self.dialog.button_box.button(QtWidgets.QDialogButtonBox.Cancel)
+        button = self.dialog.button_box.button(
+            QtWidgets.QDialogButtonBox.Cancel)
         button.click()
         result = self.dialog.result()
         self.assertEqual(result, QtWidgets.QDialog.Rejected)
@@ -95,8 +96,8 @@ class HarmonyQGISDialogTest(unittest.TestCase):
 
         self.assertEqual(comboBox.currentText(), "MyPolyLayer")
 
+
 def run_all():
     suite = unittest.makeSuite(HarmonyQGISDialogTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
-

@@ -17,7 +17,6 @@ import unittest
 from qgis.PyQt.QtGui import QIcon
 
 
-
 class HarmonyQGISResourcesTest(unittest.TestCase):
     """Test rerources work."""
 
@@ -35,10 +34,8 @@ class HarmonyQGISResourcesTest(unittest.TestCase):
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 
+
 def run_all():
     suite = unittest.makeSuite(HarmonyQGISResourcesTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
-
-
-

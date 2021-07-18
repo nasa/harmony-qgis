@@ -42,68 +42,70 @@ expectedJSON = """[
     ]
 ]"""
 
+
 def hasSession(name):
-  settings = QgsSettings()
-  savedSessions = settings.value(sessionsKey) or []
-  for session in savedSessions:
-    if session[0] == name:
-      return True
-  return False
+    settings = QgsSettings()
+    savedSessions = settings.value(sessionsKey) or []
+    for session in savedSessions:
+        if session[0] == name:
+            return True
+    return False
+
 
 class HarmonySessionsTest(unittest.TestCase):
     """Test sessions work."""
 
     def setUp(self):
-      """Runs before each test."""
-      self.dialog = HarmonyQGISDialog(None)
-      self.sessionsDialog = HarmonyQGISSessionsDialog(None)
-      settings = QgsSettings()
-      settings.setValue(sessionsKey, [])
-        
+        """Runs before each test."""
+        self.dialog = HarmonyQGISDialog(None)
+        self.sessionsDialog = HarmonyQGISSessionsDialog(None)
+        settings = QgsSettings()
+        settings.setValue(sessionsKey, [])
+
     def tearDown(self):
-      """Runs after each test."""
-      self.dialog = None
+        """Runs after each test."""
+        self.dialog = None
 
     def test_sessions(self):
-      """Test we can save, export, and import a session."""
-      field = self.dialog.collectionField
-      field.insert("Collection123")
-      field = self.dialog.versionField
-      field.insert("1.0.0")
-      field = self.dialog.variableField
-      field.insert("red_var")
+        """Test we can save, export, and import a session."""
+        field = self.dialog.collectionField
+        field.insert("Collection123")
+        field = self.dialog.versionField
+        field.insert("1.0.0")
+        field = self.dialog.variableField
+        field.insert("red_var")
 
-      comboBox = self.dialog.comboBox
-      comboBox.clear()
-      comboBox.addItem("MyPointLayer")
-      comboBox.addItem("MyPolyLayer")
-      comboBox.addItem("MyLineLayer")
-      comboBox.setCurrentIndex(1)
+        comboBox = self.dialog.comboBox
+        comboBox.clear()
+        comboBox.addItem("MyPointLayer")
+        comboBox.addItem("MyPolyLayer")
+        comboBox.addItem("MyLineLayer")
+        comboBox.setCurrentIndex(1)
 
-      saveSession(self.dialog, "test_session")
+        saveSession(self.dialog, "test_session")
 
-      self.assertTrue(hasSession("test_session"))
+        self.assertTrue(hasSession("test_session"))
 
-      settings = QgsSettings()
-      savedSessions = settings.value(sessionsKey) or []
-      resetDialog(self.sessionsDialog, savedSessions)
-      self.sessionsDialog.listWidget.setCurrentRow(0)
+        settings = QgsSettings()
+        savedSessions = settings.value(sessionsKey) or []
+        resetDialog(self.sessionsDialog, savedSessions)
+        self.sessionsDialog.listWidget.setCurrentRow(0)
 
-      fileName = "/tmp/test_sessions.json"
-      exportSessions(self.sessionsDialog, fileName)
-      self.assertTrue(os.path.exists(fileName))
-      with open(fileName, "r") as f:
-        contents = f.read()
-        self.assertEqual(contents, expectedJSON)
+        fileName = "/tmp/test_sessions.json"
+        exportSessions(self.sessionsDialog, fileName)
+        self.assertTrue(os.path.exists(fileName))
+        with open(fileName, "r") as f:
+            contents = f.read()
+            self.assertEqual(contents, expectedJSON)
 
-      importSessions(self.dialog, self.sessionsDialog, fileName)
-      savedSessions = settings.value(sessionsKey)
-      self.assertEqual(len(savedSessions), 2)
-      self.assertEqual(savedSessions[0][0], "test_session")
-      self.assertEqual(savedSessions[1][0], "test_session_1")
+        importSessions(self.dialog, self.sessionsDialog, fileName)
+        savedSessions = settings.value(sessionsKey)
+        self.assertEqual(len(savedSessions), 2)
+        self.assertEqual(savedSessions[0][0], "test_session")
+        self.assertEqual(savedSessions[1][0], "test_session_1")
+
 
 def run_all():
     suite = unittest.makeSuite(HarmonySessionsTest)
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
-
