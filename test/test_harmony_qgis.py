@@ -60,7 +60,6 @@ class HarmonyQGISTest(unittest.TestCase):
 
     def test_plugin(self):
         """Test we can retrieve layers from Harmony with the plugin (this is a SLOW test)."""
-
         self.assertIsNotNone(self.dialog)
 
         # fill in the request fields and choose our layer

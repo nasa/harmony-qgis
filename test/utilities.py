@@ -22,7 +22,6 @@ def get_qgis_app():
 
     If QGIS is already running the handle to that app will be returned.
     """
-
     try:
         from qgis.PyQt.QtCore import QSize
         from qgis.PyQt import QtGui
