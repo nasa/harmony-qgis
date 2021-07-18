@@ -46,13 +46,13 @@ class HarmonyQGISDialog(QtWidgets.QDialog, FORM_CLASS):
     # validate the collection, version, and variable fields
     def validateInput(self):
         collectionId = self.collectionField.text()
-        if collectionId == None or collectionId == '':
+        if collectionId is None or collectionId == '':
             QtWidgets.QMessageBox.information(
                 self, "Error!", "The collection field is required")
             return False
 
         variable = self.variableField.text()
-        if variable == None or variable == '':
+        if variable is None or variable == '':
             QtWidgets.QMessageBox.information(
                 self, "Error!", "The variable field is required")
             return False
